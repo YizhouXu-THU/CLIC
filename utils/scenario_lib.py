@@ -1,6 +1,8 @@
 import os
 import random
 import numpy as np
+import torch
+from utils.reward_predictor import reward_predictor
 
 
 class scenario_lib:
@@ -8,6 +10,7 @@ class scenario_lib:
         self.path = path
         self.num = len(os.listdir(path))
         self.data = self.load(list(range(self.num)))
+        self.max_dim = self.data.shape[1]
     
     def load(self, index: list[int]) -> np.ndarray:
         data = []
@@ -28,14 +31,31 @@ class scenario_lib:
         
         for i in range(len(data)):
             r = data[i].shape[0]
-            data[i] = np.pad(data[i], ((0,r_max-r),(0,0)), 'constant', constant_values=(0,0))
-        
+            data[i] = np.pad(data[i], ((0,r_max-r),(0,0)), 'constant', constant_values=(0,0)).flatten()
         return data
 
-    def sample(self, batch_size: int) -> list[int]:
-        return random.sample(list(range(self.num)), batch_size)
+    def sample(self, size: int) -> list[int]:
+        """return a list of index. """
+        return random.sample(list(range(self.num)), size)
+    
+    def labeling(self, predictor: reward_predictor) -> None:
+        labels = []
+        for i in range(self.num):
+            label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
+            labels.append(label)
+        self.labels = labels
+    
+    def select(self, size: int) -> list[int]:
+        """
+        Divide the [0,1] interval into 'size' equal parts, 
+        and randomly sample one scenario from each part. 
 
-
-if __name__ == '__main__':
-    lib = scenario_lib()
-    data_sample = lib.data[lib.sample(batch_size=3)]
+        return a list of index. 
+        """
+        labels = np.array(self.labels)
+        index = []
+        for i in range(size):
+            indices = np.argwhere((labels >= i/size) & (labels <= (i+1)/size))
+            index.append(indices[random.randrange(indices.size)][0])
+            # TODO: consider situations where there are no scenarios within a certain interval
+        return index
