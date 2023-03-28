@@ -7,7 +7,8 @@ from utils.scenario_lib import scenario_lib
 from utils.reward_predictor import reward_predictor
 
 
-def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.ndarray, epochs=500, lr=1e-3) -> reward_predictor:
+def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.ndarray, 
+                    epochs=500, lr=1e-3) -> reward_predictor:
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()
 
