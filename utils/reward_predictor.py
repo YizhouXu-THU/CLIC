@@ -17,6 +17,7 @@ class reward_predictor(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # if isinstance(x, np.ndarray):
         #     x = torch.tensor(x, dtype=torch.float).to(self.device)
+        x = x.to(self.device)
         if self.dropout:
             x = F.relu(self.dropout_layer(self.fc1(x)))
             x = F.relu(self.dropout_layer(self.fc2(x)))
@@ -24,5 +25,6 @@ class reward_predictor(nn.Module):
             x = F.relu(self.fc1(x))
             x = F.relu(self.fc2(x))
         x = 2 * torch.tanh(self.fc3(x)) # soft clip
+        # TODO: softmax debug
         output = torch.softmax(x)
         return output
