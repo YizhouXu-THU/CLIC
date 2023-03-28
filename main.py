@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from utils import scenario_lib
-from utils import reward_predictor
+from utils.scenario_lib import scenario_lib
+from utils.reward_predictor import reward_predictor
 
 
 def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.ndarray, epochs=500) -> reward_predictor:
