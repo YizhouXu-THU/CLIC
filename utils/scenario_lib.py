@@ -11,6 +11,7 @@ class scenario_lib:
         self.num = len(os.listdir(path))
         self.data = self.load(list(range(self.num)))
         self.max_dim = self.data.shape[1]
+        self.labels = [0] * self.num    # all labels are 0 during initialization
     
     def load(self, index: list[int]) -> np.ndarray:
         data = []

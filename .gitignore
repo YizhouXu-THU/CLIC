@@ -2,3 +2,4 @@
 /__pycache__/
 /.vscode/
 /utils/__pycache__/
+/scenario_generation.py
