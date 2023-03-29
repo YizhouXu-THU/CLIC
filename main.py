@@ -25,13 +25,13 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
 
 def main():
     lib = scenario_lib()
-    X_train = lib.data[lib.sample(size=3)]
+    X_train = lib.data[lib.sample(size=1024)]
     # TODO: use actual y_train
     y_train = np.zeros((X_train.shape[0]))
     predictor = reward_predictor(num_input=lib.max_dim)
     predictor = train_predictor(predictor, X_train, y_train)
     lib.labeling(predictor)
-    select_scenario = lib.data[lib.select(size=2)]
+    select_scenario = lib.data[lib.select(size=100)]
 
 
 if __name__ == '__main__':
