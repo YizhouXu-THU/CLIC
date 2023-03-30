@@ -58,7 +58,7 @@ def main():
     print('Selecting time: ', t6-t5)
 
     # 7. Train AV model
-    
+    # TODO
     t7 = time.time()
     print('Training AV model time: ', t7-t6)
 
