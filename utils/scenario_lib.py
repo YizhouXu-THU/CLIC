@@ -7,17 +7,18 @@ from utils.reward_predictor import reward_predictor
 
 
 class scenario_lib:
-    def __init__(self, path='./scenario_lib/') -> None:
+    def __init__(self, path='.\\scenario_lib\\') -> None:
         self.path = path
-        self.num = len(os.listdir(path))
-        self.data = self.load(list(range(self.num)))
+        self.data = self.load()
+        self.num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
         self.labels = [0.0] * self.num  # all labels are set to 0 during initialization
     
-    def load(self, index: list[int]) -> np.ndarray:
+    def load(self) -> np.ndarray:
+        """Load all data under the path. """
         data = []
-        for i in index:
-            scenario = np.loadtxt(self.path+str(i)+'.csv', delimiter=',', skiprows=1)
+        for filename in os.listdir(self.path):
+            scenario = np.loadtxt(self.path+filename, delimiter=',', skiprows=1)
             data.append(scenario)
         
         data = self.fill_zero(data)
@@ -42,10 +43,17 @@ class scenario_lib:
         return data
 
     def sample(self, size: int) -> list[int]:
-        """Return a list of index. """
+        """
+        Randomly sample some scenarios from the scenario library. 
+
+        The sampled scenarios are used to evaluate AV model and train the Reward Predictor. 
+
+        Return a list of index. 
+        """
         return random.sample(list(range(self.num)), size)
     
     def labeling(self, predictor: reward_predictor) -> None:
+        """Label each scenario using the Reward Predictor. """
         labels = []
         for i in range(self.num):
             label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
@@ -54,7 +62,9 @@ class scenario_lib:
     
     def select(self, size: int) -> list[int]:
         """
-        Sort all scenario by label and sample evenly according to the order. 
+        Sort all scenarios by label and sample evenly according to the order. 
+
+        The selected scenarios is used to train the AV model. 
 
         Return a list of index. 
         """
@@ -66,7 +76,7 @@ class scenario_lib:
         # return index
         
         labels = np.stack((np.arange(self.num), np.array(self.labels)))
-        labels = labels.T(labels.T[:,1].argsort()).T    # sort by label
+        labels = labels[:, np.argsort(labels[1])]   # sort by label
         step = math.floor(self.num / size)
-        index = labels[0, ::step].tolist()
+        index = labels[0, ::step].astype(int).tolist()
         return index
