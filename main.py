@@ -25,14 +25,42 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
 
 
 def main():
+    t0 = time.time()
     lib = scenario_lib()
+    predictor = reward_predictor(num_input=lib.max_dim)
+    t1 = time.time()
+    print('Preparation time: ', t1-t0)
+
+    # 1. Sample
     X_train = lib.data[lib.sample(size=1024)]
+    t2 = time.time()
+    print('Sampling time: ', t2-t1)
+
+    # 2. Evaluate / 3. Interact
     # TODO: use actual y_train
     y_train = np.zeros((X_train.shape[0]))
-    predictor = reward_predictor(num_input=lib.max_dim)
+    t3 = time.time()
+    print('Evaluation time: ', t3-t2)
+
+    # 4. Train reward predictor
     predictor = train_predictor(predictor, X_train, y_train)
+    t4 = time.time()
+    print('Training reward predictor time: ', t4-t3)
+
+    # 5. Labeling
     lib.labeling(predictor)
+    t5 = time.time()
+    print('Labeling time: ', t5-t4)
+
+    # 6. Select
     select_scenario = lib.data[lib.select(size=100)]
+    t6 = time.time()
+    print('Selecting time: ', t6-t5)
+
+    # 7. Train AV model
+    
+    t7 = time.time()
+    print('Training AV model time: ', t7-t6)
 
 
 if __name__ == '__main__':

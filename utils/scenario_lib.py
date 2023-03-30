@@ -1,4 +1,5 @@
 import os
+import math
 import random
 import numpy as np
 import torch
@@ -11,7 +12,7 @@ class scenario_lib:
         self.num = len(os.listdir(path))
         self.data = self.load(list(range(self.num)))
         self.max_dim = self.data.shape[1]
-        self.labels = [0] * self.num    # all labels are 0 during initialization
+        self.labels = [0.0] * self.num  # all labels are set to 0 during initialization
     
     def load(self, index: list[int]) -> np.ndarray:
         data = []
@@ -24,6 +25,11 @@ class scenario_lib:
         return data
     
     def fill_zero(self, data: list[np.ndarray]) -> list[np.ndarray]:
+        """
+        Fill 0 in the vacant part of other scenarios based on the largest dimension of all input scenarios. 
+
+        Return a list of scenarios filled with 0 on the input scenarios. 
+        """
         r_max = 0
         for i in range(len(data)):
             r = data[i].shape[0]
@@ -36,7 +42,7 @@ class scenario_lib:
         return data
 
     def sample(self, size: int) -> list[int]:
-        """return a list of index. """
+        """Return a list of index. """
         return random.sample(list(range(self.num)), size)
     
     def labeling(self, predictor: reward_predictor) -> None:
@@ -48,15 +54,19 @@ class scenario_lib:
     
     def select(self, size: int) -> list[int]:
         """
-        Divide the [0,1] interval into 'size' equal parts, 
-        and randomly sample one scenario from each part. 
+        Sort all scenario by label and sample evenly according to the order. 
 
-        return a list of index. 
+        Return a list of index. 
         """
-        labels = np.array(self.labels)
-        index = []
-        for i in range(size):
-            indices = np.argwhere((labels >= i/size) & (labels <= (i+1)/size))
-            index.append(indices[random.randrange(indices.size)][0])
-            # TODO: consider situations where there are no scenarios within a certain interval
+        # labels = np.array(self.labels)
+        # index = []
+        # for i in range(size):
+        #     indices = np.argwhere((labels >= i/size) & (labels <= (i+1)/size))
+        #     index.append(indices[random.randrange(indices.size)][0])
+        # return index
+        
+        labels = np.stack((np.arange(self.num), np.array(self.labels)))
+        labels = labels.T(labels.T[:,1].argsort()).T    # sort by label
+        step = math.floor(self.num / size)
+        index = labels[0, ::step].tolist()
         return index
