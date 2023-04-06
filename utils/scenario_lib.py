@@ -7,7 +7,7 @@ from utils.reward_predictor import reward_predictor
 
 
 class scenario_lib:
-    def __init__(self, path='.\\scenario_lib\\') -> None:
+    def __init__(self, path='./scenario_lib/') -> None:
         self.path = path
         self.data = self.load()
         self.num = self.data.shape[0]
