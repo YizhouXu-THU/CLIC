@@ -58,7 +58,7 @@ def main():
     print('Selecting time: %.1fs' % (t6-t5))
 
     # 7. Train AV model
-    # TODO
+    # TODO: add AV model
     t7 = time.time()
     print('Training AV model time: %.1fs' % (t7-t6))
 
