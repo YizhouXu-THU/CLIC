@@ -24,6 +24,10 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
     return model
 
 
+def train_av():
+    pass
+
+
 def main():
     t0 = time.time()
     lib = scenario_lib()
