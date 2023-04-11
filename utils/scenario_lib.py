@@ -16,6 +16,7 @@ class scenario_lib:
     
     def load(self) -> np.ndarray:
         """Load all data under the path. """
+        # TODO: consider the issue of bv's data being relative position and relative velocity
         data = []
         for filename in os.listdir(self.path):
             scenario = np.loadtxt(self.path+filename, delimiter=',', skiprows=1)
