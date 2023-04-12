@@ -1,4 +1,5 @@
 /scenario_lib/
+/scenario_lib_test/
 /__pycache__/
 /.vscode/
 /utils/__pycache__/

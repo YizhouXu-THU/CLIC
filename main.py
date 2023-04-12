@@ -1,48 +1,33 @@
 import time
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
 
 from utils.scenario_lib import scenario_lib
 from utils.reward_predictor import reward_predictor
-
-
-def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.ndarray, 
-                    epochs=500, lr=1e-3) -> reward_predictor:
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    loss_function = nn.CrossEntropyLoss()
-
-    for epoch in range(epochs):
-        out = model(torch.FloatTensor(X_train))
-        y = torch.tensor(y_train)
-        loss = loss_function(out, y)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    
-    return model
-
-
-def train_av():
-    pass
+from utils.env import Env
+from utils.av_policy import SAC
+from utils.func import train_predictor, evaluate, train_av
 
 
 def main():
     t0 = time.time()
-    lib = scenario_lib()
+    lib = scenario_lib(path='./scenario_lib_test/')
     predictor = reward_predictor(num_input=lib.max_dim)
+    env = Env(max_bv_num=lib.max_bv_num)
+    av_model = SAC(env)
+    # TODO: may need to pretrain av_model
     t1 = time.time()
     print('Preparation time: %.1fs' % (t1-t0))
 
     # 1. Sample
-    X_train = lib.data[lib.sample(size=1024)]
+    index = lib.sample(size=1024)
+    X_train = lib.data[index]
+    av_speed = np.array(lib.av_speed[index])
     t2 = time.time()
     print('Sampling time: %.1fs' % (t2-t1))
 
     # 2. Evaluate / 3. Interact
-    # TODO: use actual y_train
     y_train = np.zeros((X_train.shape[0]))
+    # y_train = evaluate(av_model, env, X_train, av_speed)    # TODO: use actual y_train by evaluation
     t3 = time.time()
     print('Evaluation time: %.1fs' % (t3-t2))
 
@@ -57,12 +42,14 @@ def main():
     print('Labeling time: %.1fs' % (t5-t4))
 
     # 6. Select
-    select_scenario = lib.data[lib.select(size=100)]
+    index = lib.select(size=100)
+    selected_scenario = lib.data[index]
+    av_speed = np.array(lib.av_speed[index])
     t6 = time.time()
     print('Selecting time: %.1fs' % (t6-t5))
 
     # 7. Train AV model
-    # TODO: add AV model
+    # av_model = train_av(av_model, env, selected_scenario, av_speed) # TODO: train AV model
     t7 = time.time()
     print('Training AV model time: %.1fs' % (t7-t6))
 

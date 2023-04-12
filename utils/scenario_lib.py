@@ -1,4 +1,5 @@
 import os
+import csv
 import math
 import random
 import numpy as np
@@ -9,22 +10,37 @@ from utils.reward_predictor import reward_predictor
 class scenario_lib:
     def __init__(self, path='./scenario_lib/') -> None:
         self.path = path
-        self.data = self.load()
+        self.max_bv_num = 0             # initialize with 0
+        self.data, self.av_speed = self.load_data()
         self.num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
-        self.labels = [0.0] * self.num  # all labels are set to 0 during initialization
+        self.labels = [0.0] * self.num  # initialize with 0
     
-    def load(self) -> np.ndarray:
+    def load_data(self) -> np.ndarray:
         """Load all data under the path. """
-        # TODO: consider the issue of bv's data being relative position and relative velocity
+        # TODO: classify by BV quantity
         data = []
+        av_speed = []
         for filename in os.listdir(self.path):
-            scenario = np.loadtxt(self.path+filename, delimiter=',', skiprows=1)
-            data.append(scenario)
+            with open(self.path+filename, 'r') as f:
+                reader = csv.reader(f)
+                scenario = []
+                for i, row in enumerate(reader):
+                    if i == 1:
+                        av_info = np.array(row, dtype=np.float64)
+                    elif i > 1:
+                        scenario.append(np.array(row, dtype=np.float64))
+                av_speed.append(av_info[-1])
+                av_info = np.expand_dims(np.array(av_info[0:-1]), axis=0)
+                scenario = np.concatenate((av_info, scenario), axis=0)
+                data.append(scenario)
+
+                max_bv_num = np.max(scenario[:, 1])
+                if max_bv_num > self.max_bv_num:
+                    self.max_bv_num = int(max_bv_num)
         
         data = self.fill_zero(data)
-        data = np.array(data)
-        return data
+        return np.array(data), np.array(av_speed)
     
     def fill_zero(self, data: list[np.ndarray]) -> list[np.ndarray]:
         """
@@ -78,6 +94,6 @@ class scenario_lib:
         
         labels = np.stack((np.arange(self.num), np.array(self.labels)))
         labels = labels[:, np.argsort(labels[1])]   # sort by label
-        step = math.floor(self.num / size)
+        step = math.floor(self.num / (size-1))
         index = labels[0, ::step].astype(int).tolist()
         return index
