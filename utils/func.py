@@ -3,16 +3,16 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from utils.reward_predictor import reward_predictor
 from utils.av_policy import SAC
 from utils.env import Env
+from utils.reward_predictor import reward_predictor
 
 
 def evaluate(av_model: SAC, env: Env, X_train: np.ndarray, av_speed: np.ndarray) -> np.ndarray:
     y_train = []
     for i in range(X_train.shape[0]):
         scenario = X_train[i]
-        state = env.reset(scenario, av_speed)
+        state = env.reset(scenario, av_speed[i])
         done = 0
 
         while not done:
@@ -48,7 +48,7 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, av_speed: np.ndarra
     for i in range(scenarios.shape[0]):
         scenario = scenarios[i]
         for episode in range(episodes):
-            state = env.reset(scenario, av_speed)
+            state = env.reset(scenario, av_speed[i])
             episode_reward = 0    # reward of each episode
             done = 0
             
@@ -60,8 +60,9 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, av_speed: np.ndarra
                 state = next_state
                 episode_reward += reward
 
-                av_model.train()
-
+                if episode > 10:
+                    av_model.train()
+                
                 if done:
                     break
     

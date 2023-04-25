@@ -12,7 +12,7 @@ def main():
     t0 = time.time()
     lib = scenario_lib(path='./scenario_lib_test/')
     predictor = reward_predictor(num_input=lib.max_dim)
-    env = Env(max_bv_num=lib.max_bv_num)
+    env = Env(max_bv_num=lib.max_bv_num, gui=True)
     av_model = SAC(env)
     # TODO: may need to pretrain av_model
     t1 = time.time()
@@ -25,30 +25,30 @@ def main():
     t2 = time.time()
     print('Sampling time: %.1fs' % (t2-t1))
 
-    # 2. Evaluate / 3. Interact
+    # 2. Evaluate (Interact)
     y_train = np.zeros((X_train.shape[0]))
     # y_train = evaluate(av_model, env, X_train, av_speed)    # TODO: use actual y_train by evaluation
     t3 = time.time()
     print('Evaluation time: %.1fs' % (t3-t2))
 
-    # 4. Train reward predictor
+    # 3. Train reward predictor
     predictor = train_predictor(predictor, X_train, y_train)
     t4 = time.time()
     print('Training reward predictor time: %.1fs' % (t4-t3))
 
-    # 5. Labeling
+    # 4. Labeling
     lib.labeling(predictor)
     t5 = time.time()
     print('Labeling time: %.1fs' % (t5-t4))
 
-    # 6. Select
+    # 5. Select
     index = lib.select(size=100)
     selected_scenario = lib.data[index]
     av_speed = np.array(lib.av_speed[index])
     t6 = time.time()
     print('Selecting time: %.1fs' % (t6-t5))
 
-    # 7. Train AV model
+    # 6. Train AV model
     # av_model = train_av(av_model, env, selected_scenario, av_speed) # TODO: train AV model
     t7 = time.time()
     print('Training AV model time: %.1fs' % (t7-t6))
