@@ -79,7 +79,6 @@ class ScalarNet(nn.Module):
         return self.constant
 
 
-# TODO: solve the problem of different values of state_dim, fill with 0?
 class ValueNet(nn.Module):
     """Critic"""
 
@@ -161,52 +160,36 @@ class PolicyNet(nn.Module):
     
     def choose_action(self, state: np.ndarray) -> torch.Tensor:
         """Sample action based on state. """
-
         state = torch.FloatTensor(state).to(device) # transform state to a tensor
         mean, log_std = self.forward(state)
         std = log_std.exp()    
         normal = Normal(mean, std)  # construct normal distribution for action sampling    
         action = normal.sample()    # sample action in the generated normal distribution; shape: action_dim
-        
-        # # use tanh() activation, with range [-1,1]; numpy can only be operated on CPU
-        # action = torch.tanh(action).detach().cpu().numpy()
-        # extend the action to the actual range
-        # action = (self.action_range[1] + self.action_range[0] +\
-        #                 (self.action_range[1] - self.action_range[0]) * action) / 2.0
 
-        action_split = torch.chunk(action/10, chunks=2, dim=0)  # split the action into abs and arg
-        action_abs = torch.clamp(action_split[0], self.action_range[0], self.action_range[1])
-        action_arg = torch.clamp(action_split[1], self.action_range[2], self.action_range[3])
-        action = torch.cat((action_abs, action_arg), dim=0) # shape: action_dim
+        action_split = torch.chunk(action/10, chunks=2, dim=0)[0]   # split the action into abs and arg
+        action_abs = torch.clamp(action_split[0,0], self.action_range[0,0], self.action_range[0,1])
+        action_arg = torch.clamp(action_split[0,1], self.action_range[1,0], self.action_range[1,1])
+        action = torch.cat((action_abs.unsqueeze(dim=0), action_arg.unsqueeze(dim=0)), dim=0) # shape: [action_dim]
 
         return action
 
     def evaluate(self, state: torch.Tensor, epsilon=1e-6) -> tuple[torch.Tensor, torch.Tensor]:
         """Reparameterize to calculate entropy. """
-
         mean, log_std = self.forward(state)
         std = log_std.exp()
         normal = Normal(mean, std)
         noise = Normal(0, 1)
         z = noise.sample()  # sample noise in standard normal distribution
         
-        # action = torch.tanh(mean + std*z.to(device))  # tanh() limits the action range to [-1,1]
-        # calculate the entropy of the action
-        # log_prob = normal.log_prob(mean + std*z.to(device)) - torch.log(1 - action.pow(2) + epsilon)
-        # log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
-        # extend the action to the actual range
-        # action = (self.action_range[1] + self.action_range[0] +\
-        #                 (self.action_range[1] - self.action_range[0]) * action) / 2.0
-        
         action = mean + std*z.to(device)    # shape: batch_size * action_dim
         # calculate the entropy of the action
         log_prob = normal.log_prob(action) - torch.log(1 - torch.tanh(action).pow(2) + epsilon)
         log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
         
-        action_split = torch.chunk(action/10, chunks=2, dim=1)  # split the action into abs and arg
-        action_abs = torch.clamp(action_split[0], self.action_range[0], self.action_range[1])
-        action_arg = torch.clamp(action_split[1], self.action_range[2], self.action_range[3])
-        action = torch.cat((action_abs, action_arg), dim=1) # shape: batch_size * action_dim
+        action_split = torch.chunk(action/10, chunks=2, dim=1)[0]   # split the action into abs and arg
+        action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
+        action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        action = torch.cat((action_abs, action_arg), dim=1)     # shape: batch_size * action_dim
 
         return action, log_prob
 

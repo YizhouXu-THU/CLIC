@@ -1,54 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- generated on 2022-08-10 21:51:45 by Eclipse SUMO netedit Version 1.14.1
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
-
-    <input>
-        <sumo-net-file value="D:\school\科研\课题\RL Scenario Generation\config\lane.net.xml"/>
-    </input>
-
-    <output>
-        <output-file value="D:\school\科研\课题\RL Scenario Generation\config\lane.net.xml"/>
-    </output>
-
-    <processing>
-        <geometry.min-radius.fix.railways value="false"/>
-        <geometry.max-grade.fix value="false"/>
-        <offset.disable-normalization value="true"/>
-        <lefthand value="false"/>
-    </processing>
-
-    <junctions>
-        <no-internal-links value="true"/>
-        <no-turnarounds value="true"/>
-        <junctions.corner-detail value="5"/>
-        <junctions.limit-turn-speed value="5.5"/>
-        <rectangular-lane-cut value="false"/>
-    </junctions>
-
-    <pedestrian>
-        <walkingareas value="false"/>
-    </pedestrian>
-
-</configuration>
--->
-
+<?xml version='1.0' encoding="UTF-8"?>
 <net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
-
     <location netOffset="0.00,0.00" convBoundary="0.00,0.00,2000.00,0.00" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
-
-    <edge id="-lane" from="J1" to="J0" priority="-1" length="2000.00">
-        <lane id="-lane_0" index="0" speed="34.00" length="2000.00" shape="2000.00,8.00 0.00,8.00"/>
-        <lane id="-lane_1" index="1" speed="34.00" length="2000.00" shape="2000.00,4.80 0.00,4.80"/>
-        <lane id="-lane_2" index="2" speed="34.00" length="2000.00" shape="2000.00,1.60 0.00,1.60"/>
+    <edge from="J0" id="lane" priority="-1" to="J1">
+        <lane id="lane0" index="0" length="370" shape="-100,2.00 270,2.00" speed="40.00" width="4"/>
+        <lane id="lane1" index="1" length="370" shape="-100,6.00 270,6.00" speed="40.00" width="4"/>
+        <lane id="lane2" index="2" length="370" shape="-100,10.00 270,10.00" speed="40.00" width="4"/>
     </edge>
-    <edge id="lane" from="J0" to="J1" priority="-1" length="2000.00">
-        <lane id="lane_0" index="0" speed="34.00" length="2000.00" shape="0.00,-8.00 2000.00,-8.00"/>
-        <lane id="lane_1" index="1" speed="34.00" length="2000.00" shape="0.00,-4.80 2000.00,-4.80"/>
-        <lane id="lane_2" index="2" speed="34.00" length="2000.00" shape="0.00,-1.60 2000.00,-1.60"/>
-    </edge>
-
-    <junction id="J0" type="dead_end" x="0.00" y="0.00" incLanes="-lane_0 -lane_1 -lane_2" intLanes="" shape="0.00,0.00 0.00,9.60 0.00,0.00"/>
-    <junction id="J1" type="dead_end" x="2000.00" y="0.00" incLanes="lane_0 lane_1 lane_2" intLanes="" shape="2000.00,0.00 2000.00,-9.60 2000.00,0.00"/>
-
+    <junction id="J0" type="dead_end" x="-100" y="0" />
+    <junction id="J1" type="dead_end" x="370" y="0" incLanes="lane0 lane1 lane2" intLanes=""/>
 </net>

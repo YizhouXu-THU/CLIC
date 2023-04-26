@@ -14,10 +14,12 @@ def evaluate(av_model: SAC, env: Env, X_train: np.ndarray, av_speed: np.ndarray)
         scenario = X_train[i]
         state = env.reset(scenario, av_speed[i])
         done = 0
+        step = 0
 
         while not done:
+            step += 1
             action = av_model.choose_action(state).cpu().numpy()
-            next_state, reward, done, info = env.step(action)
+            next_state, reward, done, info = env.step(action, timestep=step)
             state = next_state
         
         if info == 'crash':
@@ -51,10 +53,12 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, av_speed: np.ndarra
             state = env.reset(scenario, av_speed[i])
             episode_reward = 0    # reward of each episode
             done = 0
+            step = 0
             
             while not done:
+                step += 1
                 action = av_model.choose_action(state).cpu().numpy()
-                next_state, reward, done, info = env.step(action)
+                next_state, reward, done, info = env.step(action, timestep=step)
                 not_done = 0.0 if done else 1.0
                 av_model.memory.store_transition((state, action, reward, next_state, not_done))
                 state = next_state

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2023-04-26 00:28:52 by Eclipse SUMO sumo Version 1.14.1
+<!-- generated on 2023-04-27 00:23:01 by Eclipse SUMO sumo Version 1.12.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
-        <net-file value="config/lane.net.xml"/>
-        <route-files value="config/lane.rou.xml"/>
+        <net-file value="./config/lane.net.xml"/>
+        <route-files value="./config/lane.rou.xml"/>
     </input>
 
     <output>
@@ -14,8 +14,8 @@
 
     <time>
         <begin value="0"/>
-        <end value="20000"/>
-        <step-length value="0.1"/>
+        <end value="2000"/>
+        <step-length value="0.04"/>
     </time>
 
     <processing>
@@ -37,7 +37,7 @@
     </report>
 
     <traci_server>
-        <remote-port value="56169"/>
+        <remote-port value="64999"/>
     </traci_server>
 
     <random_number>
@@ -45,9 +45,12 @@
     </random_number>
 
     <gui_only>
-        <gui-settings-file value="config/lane.settings.xml"/>
+        <gui-settings-file value="./config/lane.settings.xml"/>
         <start value="true"/>
         <tracker-interval value="0.1"/>
     </gui_only>
 
 </configuration>
+-->
+
+<tripinfos xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tripinfo_file.xsd">

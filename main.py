@@ -12,7 +12,7 @@ def main():
     t0 = time.time()
     lib = scenario_lib(path='./scenario_lib_test/')
     predictor = reward_predictor(num_input=lib.max_dim)
-    env = Env(max_bv_num=lib.max_bv_num, gui=True)
+    env = Env(max_bv_num=lib.max_bv_num, gui=False)
     av_model = SAC(env)
     # TODO: may need to pretrain av_model
     t1 = time.time()
@@ -27,7 +27,7 @@ def main():
 
     # 2. Evaluate (Interact)
     y_train = np.zeros((X_train.shape[0]))
-    # y_train = evaluate(av_model, env, X_train, av_speed)    # TODO: use actual y_train by evaluation
+    y_train = evaluate(av_model, env, X_train, av_speed)    # TODO: use actual y_train by evaluation
     t3 = time.time()
     print('Evaluation time: %.1fs' % (t3-t2))
 
