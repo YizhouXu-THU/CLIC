@@ -15,7 +15,7 @@ def evaluate(av_model: SAC, env: Env, X_train: np.ndarray, av_speed: np.ndarray)
         state = env.reset(scenario, av_speed[i])
         done = 0
         step = 0
-
+        
         while not done:
             step += 1
             action = av_model.choose_action(state).cpu().numpy()

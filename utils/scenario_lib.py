@@ -18,6 +18,7 @@ class scenario_lib:
     
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
+        # TODO: add bv speed
         # TODO: classify by BV quantity
         data = []
         av_speed = []
@@ -34,7 +35,7 @@ class scenario_lib:
                 av_info = np.expand_dims(np.array(av_info[0:-1]), axis=0)
                 scenario = np.concatenate((av_info, scenario), axis=0)
                 data.append(scenario)
-
+                
                 max_bv_num = np.max(scenario[:, 1])
                 if max_bv_num > self.max_bv_num:
                     self.max_bv_num = int(max_bv_num)

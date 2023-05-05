@@ -26,7 +26,7 @@ def main():
     print('Sampling time: %.1fs' % (t2-t1))
 
     # 2. Evaluate (Interact)
-    y_train = np.zeros((X_train.shape[0]))
+    # y_train = np.zeros((X_train.shape[0]))
     y_train = evaluate(av_model, env, X_train, av_speed)    # TODO: use actual y_train by evaluation
     t3 = time.time()
     print('Evaluation time: %.1fs' % (t3-t2))
@@ -49,7 +49,7 @@ def main():
     print('Selecting time: %.1fs' % (t6-t5))
 
     # 6. Train AV model
-    # av_model = train_av(av_model, env, selected_scenario, av_speed) # TODO: train AV model
+    av_model = train_av(av_model, env, selected_scenario, av_speed) # TODO: train AV model
     t7 = time.time()
     print('Training AV model time: %.1fs' % (t7-t6))
 
