@@ -1,10 +1,7 @@
 /scenario_lib/
 /scenario_lib_test/
-/scenario_lib_new/
 /__pycache__/
 /.vscode/
 /utils/__pycache__/
-/utils/AV_SAC/__pycache__/
 /lib_generation.py
 /scripts/
-/LaneTest_xyz_trip.xml

@@ -31,7 +31,7 @@ class Env:
         self.bv_pos = np.zeros((0, 2))
         self.av_vel = np.zeros(2)
         self.bv_vel = np.zeros((0, 2))
-        self.scenario = np.zeros((0, 5))
+        self.scenario = np.zeros((0, 6))
         self.total_timestep = 0
         self.delta_t = 0
         self.road_len = 0
@@ -39,6 +39,10 @@ class Env:
         self.state_dim = (1 + max_bv_num) * 4   # x_pos, y_pos, speed, yaw
         self.action_dim = 2                     # delta_speed, delta_yaw
         self.action_range = np.zeros((2, 2))
+        self.av_length = 0
+        self.av_width = 0
+        self.bv_length = 0
+        self.bv_width = 0
         self.current_episode = 0
         
         command = [checkBinary(app), '--start', '-c', self.cfg_sumo]
@@ -57,21 +61,26 @@ class Env:
         
         traci.start(command)
     
-    def reset(self, scenario: np.ndarray, av_speed: float) -> np.ndarray:   # TODO: no av_speed
+    def reset(self, scenario: np.ndarray) -> np.ndarray:
         """
         Add AV and BV and move them to their initial position. 
         
-        Return the current state: an array of shape (1, 4*(1 + max_bv_num)). 
+        Return the current state: an array of shape (4 * (1 + max_bv_num), ). 
         
         If the state does not have such a high dimension, which means bv_num < max_bv_num, 
         then it will be filled with 0 at the end. 
         """
+        # test
+        # traci.vehicle.add(vehID='test', routeID='straight', typeID='AV')
+        # traci.vehicle.moveToXY(vehID='test', edgeID='', lane=0, x=10, y=4, angle=100)
+        # traci.simulationStep()
+        
         # clear all vehicles
         for vehicle in traci.vehicle.getIDList():
             traci.vehicle.remove(vehicle)
 
-        self.scenario = scenario.reshape((-1, 5))
-        self.scenario[:, 4] = -self.scenario[:, 4] * 180 / np.pi + 90     # process yaw to fit with sumo
+        self.scenario = scenario.reshape((-1, 6))
+        # self.scenario[:, 5] = -self.scenario[:, 5] * 180 / np.pi + 90     # process yaw to fit with sumo
         self.total_timestep = int(np.max(self.scenario[:, 0]))
         self.bv_num = int(np.max(self.scenario[:, 1]))
         self.road_len = math.ceil(np.max(self.scenario[:, 2]))
@@ -79,23 +88,29 @@ class Env:
         self.bv_vel = np.zeros((self.bv_num, 2))    # reinitialize based on the number of BV
         self.delta_t = traci.simulation.getDeltaT()
         self.action_range = np.array(((-6, 2), (-30, 30))) * self.delta_t
+        self.av_length = traci.vehicle.getLength('AV')
+        self.av_width = traci.vehicle.getWidth('AV')
+        self.bv_length = traci.vehicle.getLength('BV')
+        self.bv_width = traci.vehicle.getWidth('BV')
         
         current_time = float(traci.simulation.getTime())
         
         # add AV and move it to its initial position
         av_id = 'AV.%d' % self.current_episode
+        angle = -self.scenario[0, 5] * 180 / np.pi + 90
         traci.vehicle.add(vehID=av_id, routeID='straight', typeID='AV', depart=current_time)
         traci.vehicle.moveToXY(vehID=av_id, edgeID='', lane=0, x=self.scenario[0,2], y=self.scenario[0,3], 
-                               angle=self.scenario[0,4], matchThreshold=self.road_len)
+                               angle=angle, matchThreshold=self.road_len)
         traci.vehicle.setLaneChangeMode(av_id, 0b000000000000)
         traci.vehicle.setSpeedMode(av_id, 0b100000)
         
         # add BV and move them to their initial position
         for i in range(self.bv_num):
             bv_id = 'BV.%d' % (i+1)
+            angle = -self.scenario[i+1, 5] * 180 / np.pi + 90
             traci.vehicle.add(vehID=bv_id, routeID='straight', typeID='BV', depart=current_time)
             traci.vehicle.moveToXY(vehID=bv_id, edgeID='', lane=0, x=self.scenario[i+1,2], y=self.scenario[i+1,3], 
-                                   angle=self.scenario[i+1,4], matchThreshold=self.road_len)
+                                   angle=angle, matchThreshold=self.road_len)
             traci.vehicle.setLaneChangeMode(bv_id, 0b000000000000)
             traci.vehicle.setSpeedMode(bv_id, 0b100000)
         
@@ -104,57 +119,48 @@ class Env:
             traci.simulationStep()
         
         # update the state of AV and BV
-        # self.av_pos[0] = traci.vehicle.getPosition(av_id)[0]
-        # self.av_pos[1] = traci.vehicle.getPosition(av_id)[1]
-        # self.av_vel[0] = traci.vehicle.getSpeed(av_id)
-        # self.av_vel[1] = traci.vehicle.getAngle(av_id)
-        
-        # for i in range(self.bv_num):
-        #     self.bv_pos[i,0] = traci.vehicle.getPosition(bv_id)[0]
-        #     self.bv_pos[i,1] = traci.vehicle.getPosition(bv_id)[1]
-        #     self.bv_vel[i,0] = traci.vehicle.getSpeed(bv_id)
-        #     self.bv_vel[i,1] = traci.vehicle.getAngle(bv_id)
         self.av_pos[0] = self.scenario[0,2]
         self.av_pos[1] = self.scenario[0,3]
-        self.av_vel[0] = av_speed
-        self.av_vel[1] = self.scenario[0,4]
+        self.av_vel[0] = self.scenario[0,4]
+        self.av_vel[1] = self.scenario[0,5]
         
         for i in range(self.bv_num):
             self.bv_pos[i,0] = self.scenario[i+1, 2]
             self.bv_pos[i,1] = self.scenario[i+1, 3]
-            # self.bv_vel[i,0] = # TODO: add bv speed
-            self.bv_vel[i,1] = self.scenario[i+1, 4]
+            self.bv_vel[i,0] = self.scenario[i+1, 4]
+            self.bv_vel[i,1] = self.scenario[i+1, 5]
         
         self.current_episode += 1
 
         state = self.get_state()
-        state = state.reshape((1, -1))  # flatten
-        # add 0 to the maximum dimension at the end of the state
-        zero_num = (self.max_bv_num - self.bv_num) * 4
-        state = np.concatenate((state, np.zeros((1, zero_num))), axis=1)
         return state
     
     def get_state(self) -> np.ndarray:
         """
-        Return an array of shapes (bv_num+1, 4), 
+        Return an array of shape (4 * (1 + max_bv_num), ), 
+        which is flattened from an array with shape (bv_num + 1, 4), 
         where 4 columns represents x_pos, y_pos, speed, and yaw respectively. 
         
         The position of BV is the relative position to AV.
         
-        The definition of yaw is the same as SUMO, that is, 
-        0-360 degrees, going clockwise with 0 at the 12'o clock position. 
+        The definition of yaw is different with SUMO, 
+        which is 0~360, going clockwise with 0 at the 12'o clock position. 
+        Here the yaw is -3.14~3.14, going counterclockwise with 0 at the 3'o clock position. 
         """
         bv_rel_dis = self.bv_pos.copy()
         bv_rel_dis -= self.av_pos   # relative distance between BV and AV
 
         av_state = np.concatenate((self.av_pos, self.av_vel)).reshape((1, -1))
         bv_state = np.concatenate((bv_rel_dis, self.bv_vel), axis=1)
-        state = np.concatenate((av_state, bv_state), axis=0)
+        state = np.concatenate((av_state, bv_state), axis=0)    # shapes (bv_num+1, 4)
+        state = state.reshape(-1)   # flatten
+        # add 0 to the maximum dimension at the end of the state
+        zero_num = (self.max_bv_num - self.bv_num) * 4
+        state = np.concatenate((state, np.zeros(zero_num)))
         return state
     
     def step(self, av_action: np.ndarray, timestep: int) -> tuple[np.ndarray, float, bool, str]:
         av_id = "AV.%d" % (self.current_episode - 1)
-        # y_range = (, )    # TODO: consider the range of road
         
         # move AV based on the input av_action
         v_x = self.av_vel[0] * np.cos(self.av_vel[1])
@@ -170,36 +176,95 @@ class Env:
         data = self.scenario[self.scenario[:, 0] == timestep]
         for i in range(self.bv_num):
             bv_id = 'BV.%d' % (i+1)
+            angle = -data[i, 5] * 180 / np.pi + 90
             traci.vehicle.moveToXY(vehID=bv_id, edgeID='', lane=0, x=data[i,2], y=data[i,3], 
-                                   angle=data[i, 4], matchThreshold=self.road_len)
+                                   angle=angle, matchThreshold=self.road_len)
         
         traci.simulationStep()
         
         # update the state of AV and BV
-        # self.av_pos[0] = traci.vehicle.getPosition(av_id)[0]
-        # self.av_pos[1] = traci.vehicle.getPosition(av_id)[1]
-        # self.av_vel[0] = traci.vehicle.getSpeed(av_id)
-        # self.av_vel[1] = traci.vehicle.getAngle(av_id)
-        
-        # for i in range(self.bv_num):
-        #     bv_id = 'BV.%d' % (i+1)
-        #     self.bv_pos[0] = traci.vehicle.getPosition(bv_id)[0]
-        #     self.bv_pos[1] = traci.vehicle.getPosition(bv_id)[1]
-        #     self.bv_vel[i,0] = traci.vehicle.getSpeed(bv_id)
-        #     self.bv_vel[i,1] = traci.vehicle.getAngle(bv_id)
         self.av_pos[0] = x
         self.av_pos[1] = y
-        self.av_vel[0] = self.av_vel[0] + av_action[0]
-        self.av_vel[1] = self.av_vel[1] + av_action[1]
+        self.av_vel[0] += av_action[0]
+        self.av_vel[1] += av_action[1]
         
         for i in range(self.bv_num):
             bv_id = 'BV.%d' % (i+1)
             self.bv_pos[0] = data[i,2]
             self.bv_pos[1] = data[i,3]
-            # self.bv_vel[0] = # TODO: add bv speed
-            self.bv_vel[1] = data[i,4]
+            self.bv_vel[0] = data[i,4]
+            self.bv_vel[1] = data[i,5]
         
-        # TODO: collision detection
+        # return appropriate values based on the current state
+        if not self.accident_detect():
+            next_state = np.zeros(4 * (1 + self.max_bv_num), dtype=float)   # invalid state
+            reward = -1
+            done = True
+            info = 'fail'
+        else:
+            next_state = self.get_state()
+            if timestep == self.total_timestep:
+                reward = 1
+                done = True
+                info = 'succeed'
+            else:
+                reward = 0
+                done = False
+                info = 'testing'
         
+        return next_state, reward, done, info
+    
+    def accident_detect(self) -> bool:
+        """
+        Lane detect: Detect if the AV has partially driven out of the road boundary 
+        (not considering the situation of fully driving out of the boundary). 
         
+        Detection principle: 
+        Calculate the minimum and maximum values of the y coordinates of the four vertices of AV 
+        and compare them with the range of the road. 
+        
+        Collision detect: Detect if the AV has collided with BV. 
+        
+        Detection Principle: 
+        Determine whether line segments intersect through vector cross multiplication, 
+        and then determine whether two vehicles have collided. 
+        Reference: https://blog.csdn.net/m0_37660632/article/details/123925503
+        
+        If an accident occurs, return False; else return True. 
+        """
+        av_vertex = np.zeros((4, 2))                # left front, right front, left rear, right rear
+        bv_vertex = np.zeros((self.bv_num, 4, 2))   # left front, right front, left rear, right rear
+        road_edge = (0, 12)
+        av_vertex[0,0] = self.av_pos[0] - self.av_width / 2 * np.sin(self.av_vel[1])
+        av_vertex[0,1] = self.av_pos[1] + self.av_width / 2 * np.cos(self.av_vel[1])
+        av_vertex[1,0] = self.av_pos[0] + self.av_width / 2 * np.sin(self.av_vel[1])
+        av_vertex[1,1] = self.av_pos[1] - self.av_width / 2 * np.cos(self.av_vel[1])
+        av_vertex[2,0] = self.av_pos[0] - self.av_width / 2 * np.sin(self.av_vel[1]) \
+                                        - self.av_length    * np.cos(self.av_vel[1])
+        av_vertex[2,1] = self.av_pos[1] + self.av_width / 2 * np.cos(self.av_vel[1]) \
+                                        - self.av_length    * np.sin(self.av_vel[1])
+        av_vertex[3,0] = self.av_pos[0] + self.av_width / 2 * np.sin(self.av_vel[1]) \
+                                        - self.av_length    * np.cos(self.av_vel[1])
+        av_vertex[3,1] = self.av_pos[1] - self.av_width / 2 * np.cos(self.av_vel[1]) \
+                                        - self.av_length    * np.sin(self.av_vel[1])
+        
+        for i in range(self.bv_num):
+            bv_vertex[i,0,0] = self.bv_pos[i,0] - self.bv_width / 2 * np.sin(self.bv_vel[i,1])
+            bv_vertex[i,0,1] = self.bv_pos[i,1] + self.bv_width / 2 * np.cos(self.bv_vel[i,1])
+            bv_vertex[i,1,0] = self.bv_pos[i,0] + self.bv_width / 2 * np.sin(self.bv_vel[i,1])
+            bv_vertex[i,1,1] = self.bv_pos[i,1] - self.bv_width / 2 * np.cos(self.bv_vel[i,1])
+            bv_vertex[i,2,0] = self.bv_pos[i,0] - self.bv_width / 2 * np.sin(self.bv_vel[i,1]) \
+                                                - self.bv_length    * np.cos(self.bv_vel[i,1])
+            bv_vertex[i,2,1] = self.bv_pos[i,1] + self.bv_width / 2 * np.cos(self.bv_vel[i,1]) \
+                                                - self.bv_length    * np.sin(self.bv_vel[i,1])
+            bv_vertex[i,3,0] = self.bv_pos[i,0] + self.bv_width / 2 * np.sin(self.bv_vel[i,1]) \
+                                                - self.bv_length    * np.cos(self.bv_vel[i,1])
+            bv_vertex[i,3,1] = self.bv_pos[i,1] - self.bv_width / 2 * np.cos(self.bv_vel[i,1]) \
+                                                - self.bv_length    * np.sin(self.bv_vel[i,1])
+
+        # lane detect
+        if (np.max(av_vertex[:,1]) > road_edge[1]) or (np.min(av_vertex[:,1]) < road_edge[0]):
+            return False
+        
+        # TODO: collision detect
         

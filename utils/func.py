@@ -8,11 +8,11 @@ from utils.env import Env
 from utils.reward_predictor import reward_predictor
 
 
-def evaluate(av_model: SAC, env: Env, X_train: np.ndarray) -> np.ndarray:
-    y_train = []
-    for i in range(X_train.shape[0]):
-        scenario = X_train[i]
-        state = env.reset(scenario)
+def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray, size: int) -> np.ndarray:
+    """Return the performance of the AV model in the given scenarios (collision: 1, otherwise: 0). """
+    labels = np.zeros(size)
+    for i in range(size):
+        state = env.reset(scenarios[i])
         done = 0
         step = 0
         
@@ -22,16 +22,17 @@ def evaluate(av_model: SAC, env: Env, X_train: np.ndarray) -> np.ndarray:
             next_state, reward, done, info = env.step(action, timestep=step)
             state = next_state
         
-        if info == 'crash':
-            y_train.append(1)
-        elif info == 'arrive':
-            y_train.append(0)
+        if info == 'fail':
+            labels[i] = 1
+        elif info == 'succeed':
+            labels[i] = 0
     
-    return np.array(y_train)
+    return labels
 
 
 def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.ndarray, 
                     epochs=500, lr=1e-3) -> reward_predictor:
+    """Training process of supervised learning. """
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()
 
@@ -47,10 +48,10 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
 
 
 def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100) -> SAC:
+    """Training process of reinforcement learning. """
     for i in range(scenarios.shape[0]):
-        scenario = scenarios[i]
         for episode in range(episodes):
-            state = env.reset(scenario)
+            state = env.reset(scenarios[i])
             episode_reward = 0    # reward of each episode
             done = 0
             step = 0
