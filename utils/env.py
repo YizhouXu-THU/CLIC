@@ -162,7 +162,7 @@ class Env:
     def step(self, av_action: np.ndarray, timestep: int) -> tuple[np.ndarray, float, bool, str]:
         av_id = "AV.%d" % (self.current_episode - 1)
         
-        # move AV based on the input av_action
+        # move AV based on the input av_action and its current state
         v_x = self.av_vel[0] * np.cos(self.av_vel[1])
         v_y = self.av_vel[0] * np.sin(self.av_vel[1])
         v_x_ = (self.av_vel[0] + av_action[0]) * np.cos(self.av_vel[1] + av_action[1])
