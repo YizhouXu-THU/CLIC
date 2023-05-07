@@ -1,5 +1,4 @@
 import os
-import csv
 import math
 import random
 import numpy as np
@@ -10,44 +9,35 @@ from utils.reward_predictor import reward_predictor
 class scenario_lib:
     def __init__(self, path='./scenario_lib/') -> None:
         self.path = path
-        self.max_bv_num = 0             # initialize with 0
-        self.data, self.av_speed = self.load_data()
-        self.num = self.data.shape[0]
+        self.max_bv_num = 0                     # initialize with 0
+        self.count = []                         # count separately based on the number of bv
+        self.data = self.load_data()
+        self.total_num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
-        self.labels = [0.0] * self.num  # initialize with 0
+        self.labels = np.zeros(self.total_num)  # initialize with 0
     
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
-        # TODO: add bv speed
-        # TODO: classify by BV quantity
         data = []
-        av_speed = []
-        for filename in os.listdir(self.path):
-            with open(self.path+filename, 'r') as f:
-                reader = csv.reader(f)
-                scenario = []
-                for i, row in enumerate(reader):
-                    if i == 1:
-                        av_info = np.array(row, dtype=np.float64)
-                    elif i > 1:
-                        scenario.append(np.array(row, dtype=np.float64))
-                av_speed.append(av_info[-1])
-                av_info = np.expand_dims(np.array(av_info[0:-1]), axis=0)
-                scenario = np.concatenate((av_info, scenario), axis=0)
+        for subpath in os.listdir(self.path):
+            self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
+            n = 0
+            for filename in os.listdir(self.path+subpath):
+                scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
                 data.append(scenario)
-                
-                max_bv_num = np.max(scenario[:, 1])
-                if max_bv_num > self.max_bv_num:
-                    self.max_bv_num = int(max_bv_num)
+                n += 1
+            self.count.append(n)
         
         data = self.fill_zero(data)
-        return np.array(data), np.array(av_speed)
+        return np.array(data)
     
     def fill_zero(self, data: list[np.ndarray]) -> list[np.ndarray]:
         """
         Fill 0 in the vacant part of other scenarios based on the largest dimension of all input scenarios. 
 
         Return a list of scenarios filled with 0 on the input scenarios. 
+        Each scenario is flattened into one dimension. 
+        So the shape of each scenario is (max_dim, ). 
         """
         r_max = 0
         for i in range(len(data)):
@@ -68,15 +58,13 @@ class scenario_lib:
 
         Return a list of index. 
         """
-        return random.sample(list(range(self.num)), size)
+        return random.sample(list(range(self.total_num)), size)
     
     def labeling(self, predictor: reward_predictor) -> None:
         """Label each scenario using the Reward Predictor. """
-        labels = []
-        for i in range(self.num):
+        for i in range(self.total_num):
             label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
-            labels.append(label)
-        self.labels = labels
+            self.labels[i] = label
     
     def select(self, size: int) -> list[int]:
         """
@@ -86,15 +74,15 @@ class scenario_lib:
 
         Return a list of index. 
         """
-        # labels = np.array(self.labels)
+        # labels = self.labels
         # index = []
         # for i in range(size):
         #     indices = np.argwhere((labels >= i/size) & (labels <= (i+1)/size))
         #     index.append(indices[random.randrange(indices.size)][0])
         # return index
         
-        labels = np.stack((np.arange(self.num), np.array(self.labels)))
+        labels = np.stack((np.arange(self.total_num), self.labels))
         labels = labels[:, np.argsort(labels[1])]   # sort by label
-        step = math.floor(self.num / (size-1))
+        step = math.floor(self.total_num / (size-1))
         index = labels[0, ::step].astype(int).tolist()
         return index

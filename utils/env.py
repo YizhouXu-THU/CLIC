@@ -53,11 +53,11 @@ class Env:
         command += ['--eager-insert','True']
         # command += ['--lanechange.duration', '0.1']
         command += ['--lateral-resolution', '0.0']
-        command += ['--tripinfo-output',self.output_path + ('%s_%s_trip.xml' % (self.name, self.agent))]
+        # command += ['--tripinfo-output',self.output_path + ('%s_%s_trip.xml' % (self.name, self.agent))]
         
         traci.start(command)
     
-    def reset(self, scenario: np.ndarray, av_speed: float) -> np.ndarray:
+    def reset(self, scenario: np.ndarray, av_speed: float) -> np.ndarray:   # TODO: no av_speed
         """
         Add AV and BV and move them to their initial position. 
         

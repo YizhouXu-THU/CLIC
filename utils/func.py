@@ -8,11 +8,11 @@ from utils.env import Env
 from utils.reward_predictor import reward_predictor
 
 
-def evaluate(av_model: SAC, env: Env, X_train: np.ndarray, av_speed: np.ndarray) -> np.ndarray:
+def evaluate(av_model: SAC, env: Env, X_train: np.ndarray) -> np.ndarray:
     y_train = []
     for i in range(X_train.shape[0]):
         scenario = X_train[i]
-        state = env.reset(scenario, av_speed[i])
+        state = env.reset(scenario)
         done = 0
         step = 0
         
@@ -46,11 +46,11 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
     return model
 
 
-def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, av_speed: np.ndarray, episodes=100) -> SAC:
+def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100) -> SAC:
     for i in range(scenarios.shape[0]):
         scenario = scenarios[i]
         for episode in range(episodes):
-            state = env.reset(scenario, av_speed[i])
+            state = env.reset(scenario)
             episode_reward = 0    # reward of each episode
             done = 0
             step = 0
