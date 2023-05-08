@@ -31,7 +31,7 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray, size: int) -> np.nd
 
 
 def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.ndarray, 
-                    epochs=500, lr=1e-3) -> reward_predictor:
+                    epochs=500, lr=1e-3, wandb_logger=None) -> reward_predictor:
     """Training process of supervised learning. """
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()
@@ -43,11 +43,14 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
+        if wandb_logger is not None:
+            pass    # TODO: use wandb
     
     return model
 
 
-def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100) -> SAC:
+def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb_logger=None) -> SAC:
     """Training process of reinforcement learning. """
     for i in range(scenarios.shape[0]):
         for episode in range(episodes):
@@ -66,7 +69,25 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100) -> SA
                 episode_reward += reward
 
                 if episode > 10:
-                    av_model.train()
+                    logger = av_model.train()
+                    if wandb_logger is not None:
+                        wandb_logger.log({
+                            'log_prob': logger['log_prob'], 
+                            'value': logger['value'], 
+                            'new_q1_value': logger['new_q1_value'], 
+                            'new_q2_value': logger['new_q2_value'], 
+                            'next_value': logger['next_value'], 
+                            'value_loss': logger['value_loss'], 
+                            'q1_value': logger['q1_value'], 
+                            'q2_value': logger['q2_value'], 
+                            'target_value': logger['target_value'], 
+                            'target_q_value': logger['target_q_value'], 
+                            'q1_value_loss': logger['q1_value_loss'], 
+                            'q2_value_loss': logger['q2_value_loss'], 
+                            'policy_loss': logger['policy_loss'], 
+                            'alpha': logger['alpha'], 
+                            'alpha_loss': logger['alpha_loss'], 
+                        })
                 
                 if done:
                     break

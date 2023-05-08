@@ -26,25 +26,6 @@ class Env:
         else:
             app = 'sumo'
         
-        self.bv_num = 0
-        self.av_pos = np.zeros(2)
-        self.bv_pos = np.zeros((0, 2))
-        self.av_vel = np.zeros(2)
-        self.bv_vel = np.zeros((0, 2))
-        self.scenario = np.zeros((0, 6))
-        self.total_timestep = 0
-        self.delta_t = 0
-        self.road_len = 0
-        self.max_bv_num = max_bv_num
-        self.state_dim = (1 + max_bv_num) * 4   # x_pos, y_pos, speed, yaw
-        self.action_dim = 2                     # delta_speed, delta_yaw
-        self.action_range = np.zeros((2, 2))
-        self.av_length = 0
-        self.av_width = 0
-        self.bv_length = 0
-        self.bv_width = 0
-        self.current_episode = 0
-        
         command = [checkBinary(app), '--start', '-c', self.cfg_sumo]
         command += ['--routing-algorithm', 'dijkstra']
         command += ['--collision.action', 'remove']
@@ -58,8 +39,28 @@ class Env:
         # command += ['--lanechange.duration', '0.1']
         command += ['--lateral-resolution', '0.0']
         # command += ['--tripinfo-output',self.output_path + ('%s_%s_trip.xml' % (self.name, self.agent))]
-        
         traci.start(command)
+        
+        self.bv_num = 0
+        self.av_pos = np.zeros(2)
+        self.bv_pos = np.zeros((self.bv_num, 2))
+        self.av_vel = np.zeros(2)
+        self.bv_vel = np.zeros((self.bv_num, 2))
+        self.total_timestep = 0
+        self.scenario = np.zeros((0, 6))
+        self.road_len = 0
+        self.max_bv_num = max_bv_num
+        self.state_dim = (1 + max_bv_num) * 4   # x_pos, y_pos, speed, yaw
+        self.action_dim = 2                     # delta_speed, delta_yaw
+        self.delta_t = traci.simulation.getDeltaT()
+        self.av_accel = traci.vehicle.getAccel('AV')
+        self.av_decel = traci.vehicle.getDecel('AV')
+        self.action_range = np.array(((self.av_decel, self.av_accel), (-np.pi/6, np.pi/6))) * self.delta_t
+        self.av_length = traci.vehicle.getLength('AV')
+        self.av_width = traci.vehicle.getWidth('AV')
+        self.bv_length = traci.vehicle.getLength('BV')
+        self.bv_width = traci.vehicle.getWidth('BV')
+        self.current_episode = 0
     
     def reset(self, scenario: np.ndarray) -> np.ndarray:
         """
@@ -97,12 +98,6 @@ class Env:
         self.road_len = math.ceil(np.max(self.scenario[:, 2]))
         self.bv_pos = np.zeros((self.bv_num, 2))    # reinitialize based on the number of BV
         self.bv_vel = np.zeros((self.bv_num, 2))    # reinitialize based on the number of BV
-        self.delta_t = traci.simulation.getDeltaT()
-        self.action_range = np.array(((-6, 2), (-30, 30))) * self.delta_t
-        self.av_length = traci.vehicle.getLength('AV')
-        self.av_width = traci.vehicle.getWidth('AV')
-        self.bv_length = traci.vehicle.getLength('BV')
-        self.bv_width = traci.vehicle.getWidth('BV')
         
         current_time = float(traci.simulation.getTime())
         
