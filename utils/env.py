@@ -71,21 +71,21 @@ class Env:
         then it will be filled with 0 at the end. 
         """
         # test
-        traci.vehicle.add(vehID='AV', routeID='straight', typeID='AV')
-        traci.vehicle.moveToXY(vehID='AV', edgeID='', lane=0, x=10, y=0, angle=100)
-        traci.vehicle.add(vehID='BV', routeID='straight', typeID='BV')
-        traci.vehicle.moveToXY(vehID='BV', edgeID='', lane=0, x=11, y=4, angle=60)
-        traci.simulationStep()
-        self.bv_num = 1
-        self.av_length = traci.vehicle.getLength('AV')
-        self.av_width = traci.vehicle.getWidth('AV')
-        self.bv_length = traci.vehicle.getLength('BV')
-        self.bv_width = traci.vehicle.getWidth('BV')
-        self.av_pos = np.array((10, 0), dtype=float)
-        self.bv_pos = np.array((11, 4), dtype=float).reshape((1, -1))
-        self.av_vel = np.array((10, -0.174533))
-        self.bv_vel = np.array((10, 0.5236)).reshape((1, -1))
-        accident = self.accident_detect()
+        # traci.vehicle.add(vehID='AV', routeID='straight', typeID='AV')
+        # traci.vehicle.moveToXY(vehID='AV', edgeID='', lane=0, x=10, y=0, angle=100)
+        # traci.vehicle.add(vehID='BV', routeID='straight', typeID='BV')
+        # traci.vehicle.moveToXY(vehID='BV', edgeID='', lane=0, x=11, y=4, angle=60)
+        # traci.simulationStep()
+        # self.bv_num = 1
+        # self.av_length = traci.vehicle.getLength('AV')
+        # self.av_width = traci.vehicle.getWidth('AV')
+        # self.bv_length = traci.vehicle.getLength('BV')
+        # self.bv_width = traci.vehicle.getWidth('BV')
+        # self.av_pos = np.array((10, 0), dtype=float)
+        # self.bv_pos = np.array((11, 4), dtype=float).reshape((1, -1))
+        # self.av_vel = np.array((10, -0.174533))
+        # self.bv_vel = np.array((10, 0.5236)).reshape((1, -1))
+        # accident = self.accident_detect()
         
         # clear all vehicles
         for vehicle in traci.vehicle.getIDList():
