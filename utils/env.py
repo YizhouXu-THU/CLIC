@@ -71,16 +71,27 @@ class Env:
         then it will be filled with 0 at the end. 
         """
         # test
-        # traci.vehicle.add(vehID='test', routeID='straight', typeID='AV')
-        # traci.vehicle.moveToXY(vehID='test', edgeID='', lane=0, x=10, y=4, angle=100)
-        # traci.simulationStep()
+        traci.vehicle.add(vehID='AV', routeID='straight', typeID='AV')
+        traci.vehicle.moveToXY(vehID='AV', edgeID='', lane=0, x=10, y=0, angle=100)
+        traci.vehicle.add(vehID='BV', routeID='straight', typeID='BV')
+        traci.vehicle.moveToXY(vehID='BV', edgeID='', lane=0, x=11, y=4, angle=60)
+        traci.simulationStep()
+        self.bv_num = 1
+        self.av_length = traci.vehicle.getLength('AV')
+        self.av_width = traci.vehicle.getWidth('AV')
+        self.bv_length = traci.vehicle.getLength('BV')
+        self.bv_width = traci.vehicle.getWidth('BV')
+        self.av_pos = np.array((10, 0), dtype=float)
+        self.bv_pos = np.array((11, 4), dtype=float).reshape((1, -1))
+        self.av_vel = np.array((10, -0.174533))
+        self.bv_vel = np.array((10, 0.5236)).reshape((1, -1))
+        accident = self.accident_detect()
         
         # clear all vehicles
         for vehicle in traci.vehicle.getIDList():
             traci.vehicle.remove(vehicle)
 
         self.scenario = scenario.reshape((-1, 6))
-        # self.scenario[:, 5] = -self.scenario[:, 5] * 180 / np.pi + 90     # process yaw to fit with sumo
         self.total_timestep = int(np.max(self.scenario[:, 0]))
         self.bv_num = int(np.max(self.scenario[:, 1]))
         self.road_len = math.ceil(np.max(self.scenario[:, 2]))
@@ -144,8 +155,8 @@ class Env:
         The position of BV is the relative position to AV.
         
         The definition of yaw is different with SUMO, 
-        which is 0~360, going clockwise with 0 at the 12'o clock position. 
-        Here the yaw is -3.14~3.14, going counterclockwise with 0 at the 3'o clock position. 
+        which is measured in degrees, going clockwise with 0 at the 12'o clock position. 
+        Here the yaw is measured in radians, going counterclockwise with 0 at the 3'o clock position. 
         """
         bv_rel_dis = self.bv_pos.copy()
         bv_rel_dis -= self.av_pos   # relative distance between BV and AV
@@ -232,9 +243,9 @@ class Env:
         
         If an accident occurs, return False; else return True. 
         """
+        # calculate the vertex coordinates of each vehicle
         av_vertex = np.zeros((4, 2))                # left front, right front, left rear, right rear
         bv_vertex = np.zeros((self.bv_num, 4, 2))   # left front, right front, left rear, right rear
-        road_edge = (0, 12)
         av_vertex[0,0] = self.av_pos[0] - self.av_width / 2 * np.sin(self.av_vel[1])
         av_vertex[0,1] = self.av_pos[1] + self.av_width / 2 * np.cos(self.av_vel[1])
         av_vertex[1,0] = self.av_pos[0] + self.av_width / 2 * np.sin(self.av_vel[1])
@@ -263,8 +274,25 @@ class Env:
                                                 - self.bv_length    * np.sin(self.bv_vel[i,1])
 
         # lane detect
+        road_edge = (0, 12)
         if (np.max(av_vertex[:,1]) > road_edge[1]) or (np.min(av_vertex[:,1]) < road_edge[0]):
             return False
         
-        # TODO: collision detect
+        def xmult(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray) -> np.ndarray:
+            """Finding the cross product of two-dimensional vector ab and vector cd. """
+            vectorAx = b[0] - a[0]
+            vectorAy = b[1] - a[1]
+            vectorBx = d[0] - c[0]
+            vectorBy = d[1] - c[1]
+            return (vectorAx * vectorBy - vectorAy * vectorBx)
         
+        # collision detect
+        for i in range(self.bv_num):
+            for p in range(4):
+                c, d = av_vertex[p-1], av_vertex[p]
+                for q in range(4):
+                    a, b = bv_vertex[i, q-1], bv_vertex[i, q]
+                    if (xmult(c,d,c,a) * xmult(c,d,c,b) < 0) and (xmult(a,b,a,c) * xmult(a,b,a,d) < 0):
+                        return False
+        
+        return True
