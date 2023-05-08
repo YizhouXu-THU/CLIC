@@ -209,17 +209,17 @@ class Env:
         # return appropriate values based on the current state
         if not self.accident_detect():
             next_state = np.zeros(4 * (1 + self.max_bv_num), dtype=float)   # invalid state
-            reward = -1
+            reward = -1.0
             done = True
             info = 'fail'
         else:
             next_state = self.get_state()
             if timestep == self.total_timestep:
-                reward = 1
+                reward = 1.0
                 done = True
                 info = 'succeed'
             else:
-                reward = 0
+                reward = 0.0
                 done = False
                 info = 'testing'
         
@@ -258,7 +258,7 @@ class Env:
                                         - self.av_length    * np.cos(self.av_vel[1])
         av_vertex[3,1] = self.av_pos[1] - self.av_width / 2 * np.cos(self.av_vel[1]) \
                                         - self.av_length    * np.sin(self.av_vel[1])
-        
+
         for i in range(self.bv_num):
             bv_vertex[i,0,0] = self.bv_pos[i,0] - self.bv_width / 2 * np.sin(self.bv_vel[i,1])
             bv_vertex[i,0,1] = self.bv_pos[i,1] + self.bv_width / 2 * np.cos(self.bv_vel[i,1])
