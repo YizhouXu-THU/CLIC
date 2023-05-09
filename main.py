@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 import numpy as np
 import wandb
+import torch
 
 from utils.scenario_lib import scenario_lib
 from utils.reward_predictor import reward_predictor
@@ -21,11 +22,12 @@ def main():
     episodes = 100
     use_wandb = False
     sumo_gui = True
+    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
     lib = scenario_lib(path='./scenario_lib_test/')
-    predictor = reward_predictor(num_input=lib.max_dim)
+    predictor = reward_predictor(num_input=lib.max_dim, device=device)
     env = Env(max_bv_num=lib.max_bv_num, gui=sumo_gui)
-    av_model = SAC(env)
+    av_model = SAC(env, device=device)
     
     if use_wandb:
         wandb_logger = wandb.init(

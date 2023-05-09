@@ -8,8 +8,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # hyperparameters
 BATCH_SIZE = 128
 LR_Q = 3e-4
@@ -30,8 +28,9 @@ class Memory:
     First in first out, which means automatically replace the oldest memory when the memory buffer is full. 
     """
 
-    def __init__(self, capacity=MEMORY_CAPACITY) -> None:
+    def __init__(self, capacity=MEMORY_CAPACITY, device='cuda') -> None:
         self.memory = collections.deque(maxlen=capacity)
+        self.device = device
 
     def store_transition(self, data: tuple[np.ndarray, np.ndarray, float, np.ndarray, float]) -> None:
         self.memory.append(data)
@@ -61,11 +60,11 @@ class Memory:
             next_state_list.append(next_state)
             not_done_list.append(not_done)
 
-        return torch.FloatTensor(np.array(state_list)).to(device), \
-               torch.FloatTensor(np.array(action_list)).to(device), \
-               torch.FloatTensor(np.array(reward_list)).unsqueeze(-1).to(device), \
-               torch.FloatTensor(np.array(next_state_list)).to(device), \
-               torch.FloatTensor(np.array(not_done_list)).unsqueeze(-1).to(device)
+        return torch.FloatTensor(np.array(state_list)).to(self.device), \
+               torch.FloatTensor(np.array(action_list)).to(self.device), \
+               torch.FloatTensor(np.array(reward_list)).unsqueeze(-1).to(self.device), \
+               torch.FloatTensor(np.array(next_state_list)).to(self.device), \
+               torch.FloatTensor(np.array(not_done_list)).unsqueeze(-1).to(self.device)
 
 
 class ScalarNet(nn.Module):
@@ -127,8 +126,9 @@ class SoftQNet(nn.Module):
 class PolicyNet(nn.Module):
     """Actor"""
 
-    def __init__(self, env, log_std_min=-20, log_std_max=2, edge=3e-3) -> None:
+    def __init__(self, env, log_std_min=-20, log_std_max=2, edge=3e-3, device='cuda') -> None:
         super(PolicyNet, self).__init__()
+        self.device = device
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
         self.action_range = env.action_range
@@ -160,7 +160,7 @@ class PolicyNet(nn.Module):
     
     def choose_action(self, state: np.ndarray) -> torch.Tensor:
         """Sample action based on state. """
-        state = torch.FloatTensor(state).to(device) # transform state to a tensor
+        state = torch.FloatTensor(state).to(self.device) # transform state to a tensor
         mean, log_std = self.forward(state)
         std = log_std.exp()    
         normal = Normal(mean, std)  # construct normal distribution for action sampling    
@@ -181,7 +181,7 @@ class PolicyNet(nn.Module):
         noise = Normal(0, 1)
         z = noise.sample()  # sample noise in standard normal distribution
         
-        action = mean + std*z.to(device)    # shape: [batch_size, action_dim]
+        action = mean + std*z.to(self.device)    # shape: [batch_size, action_dim]
         # calculate the entropy of the action
         log_prob = normal.log_prob(action) - torch.log(1 - torch.tanh(action).pow(2) + epsilon)
         log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
@@ -195,7 +195,7 @@ class PolicyNet(nn.Module):
 
 
 class SAC:
-    def __init__(self, env) -> None:
+    def __init__(self, env, device='cuda') -> None:
         self.state_dim = env.state_dim
         self.action_dim = env.action_dim
 
@@ -204,7 +204,7 @@ class SAC:
         self.target_value_net = ValueNet(env).to(device)
         self.q1_net = SoftQNet(env).to(device)
         self.q2_net = SoftQNet(env).to(device)
-        self.policy_net = PolicyNet(env).to(device)
+        self.policy_net = PolicyNet(env, device=device).to(device)
         self.log_alpha = ScalarNet(init_value=-0.001).to(device)
         
         # initialize target network (with the same form as the soft update process)
@@ -219,7 +219,7 @@ class SAC:
         self.alpha_optimizer = optim.Adam(self.log_alpha.parameters(), lr=LR_ALPHA)
 
         # initialize replay buffer
-        self.memory = Memory()
+        self.memory = Memory(device=device)
 
     def choose_action(self, state: np.ndarray) -> torch.Tensor:
         action = self.policy_net.choose_action(state)
