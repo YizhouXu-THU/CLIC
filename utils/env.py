@@ -41,25 +41,15 @@ class Env:
         # command += ['--tripinfo-output',self.output_path + ('%s_%s_trip.xml' % (self.name, self.agent))]
         traci.start(command)
         
-        self.bv_num = 0
         self.av_pos = np.zeros(2)
-        self.bv_pos = np.zeros((self.bv_num, 2))
         self.av_vel = np.zeros(2)
-        self.bv_vel = np.zeros((self.bv_num, 2))
-        self.total_timestep = 0
-        self.scenario = np.zeros((0, 6))
-        self.road_len = 0
         self.max_bv_num = max_bv_num
         self.state_dim = (1 + max_bv_num) * 4   # x_pos, y_pos, speed, yaw
         self.action_dim = 2                     # delta_speed, delta_yaw
         self.delta_t = traci.simulation.getDeltaT()
-        self.av_accel = traci.vehicle.getAccel('AV')
-        self.av_decel = traci.vehicle.getDecel('AV')
+        self.av_accel = -7.84
+        self.av_decel = 5.88
         self.action_range = np.array(((self.av_decel, self.av_accel), (-np.pi/6, np.pi/6))) * self.delta_t
-        self.av_length = traci.vehicle.getLength('AV')
-        self.av_width = traci.vehicle.getWidth('AV')
-        self.bv_length = traci.vehicle.getLength('BV')
-        self.bv_width = traci.vehicle.getWidth('BV')
         self.current_episode = 0
     
     def reset(self, scenario: np.ndarray) -> np.ndarray:
@@ -96,8 +86,8 @@ class Env:
         self.total_timestep = int(np.max(self.scenario[:, 0]))
         self.bv_num = int(np.max(self.scenario[:, 1]))
         self.road_len = math.ceil(np.max(self.scenario[:, 2]))
-        self.bv_pos = np.zeros((self.bv_num, 2))    # reinitialize based on the number of BV
-        self.bv_vel = np.zeros((self.bv_num, 2))    # reinitialize based on the number of BV
+        self.bv_pos = np.zeros((self.bv_num, 2))
+        self.bv_vel = np.zeros((self.bv_num, 2))
         
         current_time = float(traci.simulation.getTime())
         
@@ -123,6 +113,14 @@ class Env:
         traci.simulationStep()
         while av_id not in traci.simulation.getDepartedIDList():
             traci.simulationStep()
+        
+        self.av_accel = traci.vehicle.getAccel(av_id)
+        self.av_decel = -traci.vehicle.getDecel(av_id)
+        self.action_range = np.array(((self.av_decel, self.av_accel), (-np.pi/6, np.pi/6))) * self.delta_t
+        self.av_length = traci.vehicle.getLength(av_id)
+        self.av_width = traci.vehicle.getWidth(av_id)
+        self.bv_length = traci.vehicle.getLength(bv_id)
+        self.bv_width = traci.vehicle.getWidth(bv_id)
         
         # update the state of AV and BV
         self.av_pos[0] = self.scenario[0,2]
@@ -155,7 +153,7 @@ class Env:
         """
         bv_rel_dis = self.bv_pos.copy()
         bv_rel_dis -= self.av_pos   # relative distance between BV and AV
-
+        
         av_state = np.concatenate((self.av_pos, self.av_vel)).reshape((1, -1))
         bv_state = np.concatenate((bv_rel_dis, self.bv_vel), axis=1)
         state = np.concatenate((av_state, bv_state), axis=0)    # shapes (bv_num+1, 4)
@@ -196,10 +194,10 @@ class Env:
         
         for i in range(self.bv_num):
             bv_id = 'BV.%d' % (i+1)
-            self.bv_pos[0] = data[i,2]
-            self.bv_pos[1] = data[i,3]
-            self.bv_vel[0] = data[i,4]
-            self.bv_vel[1] = data[i,5]
+            self.bv_pos[i,0] = data[i,2]
+            self.bv_pos[i,1] = data[i,3]
+            self.bv_vel[i,0] = data[i,4]
+            self.bv_vel[i,1] = data[i,5]
         
         # return appropriate values based on the current state
         if not self.accident_detect():
@@ -208,12 +206,13 @@ class Env:
             done = True
             info = 'fail'
         else:
-            next_state = self.get_state()
             if timestep == self.total_timestep:
+                next_state = np.zeros(4 * (1 + self.max_bv_num), dtype=float)   # invalid state
                 reward = 1.0
                 done = True
                 info = 'succeed'
             else:
+                next_state = self.get_state()
                 reward = 0.0
                 done = False
                 info = 'testing'
