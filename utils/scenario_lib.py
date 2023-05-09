@@ -50,15 +50,15 @@ class scenario_lib:
             data[i] = np.pad(data[i], ((0,r_max-r),(0,0)), 'constant', constant_values=(0,0)).flatten()
         return data
 
-    def sample(self, size: int) -> list[int]:
+    def sample(self, size: int) -> np.ndarray:
         """
         Randomly sample some scenarios from the scenario library. 
 
         The sampled scenarios are used to evaluate AV model and train the Reward Predictor. 
 
-        Return a list of index. 
+        Return an array of index. 
         """
-        return random.sample(list(range(self.total_num)), size)
+        return np.random.randint(self.total_num, size=size)
     
     def labeling(self, predictor: reward_predictor) -> None:
         """Label each scenario using the Reward Predictor. """
@@ -66,23 +66,16 @@ class scenario_lib:
             label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
             self.labels[i] = label
     
-    def select(self, size: int) -> list[int]:
+    def select(self, size: int) -> np.ndarray:
         """
         Sort all scenarios by label and sample evenly according to the order. 
 
         The selected scenarios is used to train the AV model. 
 
-        Return a list of index. 
+        Return an array of index. 
         """
-        # labels = self.labels
-        # index = []
-        # for i in range(size):
-        #     indices = np.argwhere((labels >= i/size) & (labels <= (i+1)/size))
-        #     index.append(indices[random.randrange(indices.size)][0])
-        # return index
-        
         labels = np.stack((np.arange(self.total_num), self.labels))
         labels = labels[:, np.argsort(labels[1])]   # sort by label
         step = math.floor(self.total_num / (size-1))
-        index = labels[0, ::step].astype(int).tolist()
+        index = labels[0, ::step].astype(int)
         return index

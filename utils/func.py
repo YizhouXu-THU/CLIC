@@ -36,7 +36,7 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()
 
-    for epoch in range(epochs):
+    for epoch in range(epochs): # TODO: train with mini-batch?
         out = model(torch.FloatTensor(X_train))
         y = torch.tensor(y_train)
         loss = loss_function(out, y)
@@ -45,7 +45,7 @@ def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.nd
         optimizer.step()
         
         if wandb_logger is not None:
-            pass    # TODO: use wandb
+            wandb_logger.log({'Predictor loss': loss})
     
     return model
 
