@@ -5,3 +5,4 @@
 /utils/__pycache__/
 /lib_generation.py
 /scripts/
+/wandb/
