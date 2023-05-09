@@ -24,15 +24,6 @@ def main():
     sumo_gui = True
     device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
-    
-    eval_size = 4096
-    train_size = 100
-    rounds = 10
-    epochs = 500
-    episodes = 100
-    use_wandb = False
-    sumo_gui = True
-    
     lib = scenario_lib(path='./scenario_lib_test/')
     predictor = reward_predictor(num_input=lib.max_dim, device=device)
     env = Env(max_bv_num=lib.max_bv_num, gui=sumo_gui)
