@@ -4,7 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 
 
-class reward_predictor(nn.Module):
+class predictor(nn.Module):
     def __init__(self, num_input: int, num_hidden=256, num_output=2, device='cuda', dropout=False) -> None:
         super().__init__()
         self.device = device

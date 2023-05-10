@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -5,7 +6,7 @@ import torch.optim as optim
 
 from utils.av_policy import SAC
 from utils.env import Env
-from utils.reward_predictor import reward_predictor
+from utils.predictor import predictor
 
 
 def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray, size: int) -> np.ndarray:
@@ -30,22 +31,32 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray, size: int) -> np.nd
     return labels
 
 
-def train_predictor(model: reward_predictor, X_train: np.ndarray, y_train: np.ndarray, 
-                    epochs=500, lr=1e-3, wandb_logger=None) -> reward_predictor:
+def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
+                    epochs=500, lr=1e-3, batch_size=128, wandb_logger=None) -> predictor:
     """Training process of supervised learning. """
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()
+    total_size = y_train.size
 
-    for epoch in range(epochs): # TODO: train with mini-batch?
-        out = model(torch.FloatTensor(X_train))
-        y = torch.tensor(y_train)
-        loss = loss_function(out, y)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    for epoch in range(epochs):
+        total_loss = 0.0
+        # shuffle
+        data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
+        np.random.shuffle(data_train)
         
+        for iteration in range(math.ceil(total_size/batch_size)):
+            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
+            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
+            out = model(torch.FloatTensor(X))
+            y = torch.tensor(y)
+            loss = loss_function(out, y)
+            total_loss += loss.item()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
         if wandb_logger is not None:
-            wandb_logger.log({'Predictor loss': loss})
+            wandb_logger.log({'Predictor loss': total_loss/total_size})
     
     return model
 

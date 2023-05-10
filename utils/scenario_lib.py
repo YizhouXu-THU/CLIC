@@ -2,7 +2,7 @@ import os
 import math
 import numpy as np
 import torch
-from utils.reward_predictor import reward_predictor
+from utils.predictor import predictor
 
 
 class scenario_lib:
@@ -59,13 +59,13 @@ class scenario_lib:
         """
         return np.random.randint(self.total_num, size=size)
     
-    def labeling(self, predictor: reward_predictor) -> None:
-        """Label each scenario using the Reward Predictor. """
+    def labeling(self, predictor: predictor) -> None:
+        """Label each scenario using the Difficulty Predictor. """
         for i in range(self.total_num):
             label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
             self.labels[i] = label
     
-    def select(self, size: int) -> np.ndarray:
+    def select(self, size: int) -> np.ndarray:  # TODO: sampling the scenario with labels as weights
         """
         Sort all scenarios by label and sample evenly according to the order. 
 

@@ -5,7 +5,7 @@ import wandb
 import torch
 
 from utils.scenario_lib import scenario_lib
-from utils.reward_predictor import reward_predictor
+from utils.predictor import predictor
 from utils.env import Env
 from utils.av_policy import SAC
 from utils.func import train_predictor, evaluate, train_av
@@ -15,17 +15,17 @@ def main():
     # 0. Prepare
     t0 = time.time()
     
-    eval_size = 4096
+    eval_size = 256
     train_size = 100
     rounds = 10
     epochs = 500
     episodes = 100
-    use_wandb = True
+    use_wandb = False
     sumo_gui = False
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     lib = scenario_lib(path='./scenario_lib_test/')
-    predictor = reward_predictor(num_input=lib.max_dim, device=device)
+    pred = predictor(num_input=lib.max_dim, device=device)
     env = Env(max_bv_num=lib.max_bv_num, gui=sumo_gui)
     av_model = SAC(env, device=device)
     
@@ -65,12 +65,12 @@ def main():
         print('    Evaluation time: %.1fs' % (t3-t2))
 
         # 3. Train reward predictor
-        predictor = train_predictor(predictor, X_train, y_train, epochs=epochs, wandb_logger=wandb_logger)
+        pred = train_predictor(pred, X_train, y_train, epochs=epochs, wandb_logger=wandb_logger)
         t4 = time.time()
         print('    Training reward predictor time: %.1fs' % (t4-t3))
 
         # 4. Labeling
-        lib.labeling(predictor)
+        lib.labeling(pred)
         t5 = time.time()
         print('    Labeling time: %.1fs' % (t5-t4))
 
