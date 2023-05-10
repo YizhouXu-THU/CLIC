@@ -199,6 +199,8 @@ class Env:
             self.bv_vel[i,0] = data[i,4]
             self.bv_vel[i,1] = data[i,5]
         
+        # TODO: modify reward function
+        
         # return appropriate values based on the current state
         if not self.accident_detect():
             next_state = np.zeros(4 * (1 + self.max_bv_num), dtype=float)   # invalid state

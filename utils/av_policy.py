@@ -165,13 +165,19 @@ class PolicyNet(nn.Module):
         std = log_std.exp()    
         normal = Normal(mean, std)  # construct normal distribution for action sampling    
         action = normal.sample()    # sample action in the generated normal distribution; shape: action_dim
+        action = torch.tanh(action).detach()
 
-        action_split = torch.chunk(action/10, chunks=2, dim=0)  # split the action into speed and yaw
-        action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
-        action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        action_split = torch.chunk(action, chunks=2, dim=0)     # split the action into speed and yaw
+        # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
+        # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        # extend the action to the actual range
+        action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
+                     (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
+        action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
+                     (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
         action = torch.cat((action_abs, action_arg))    # shape: [action_dim]
 
-        return action   # TODO: clamp properly
+        return action
 
     def evaluate(self, state: torch.Tensor, epsilon=1e-6) -> tuple[torch.Tensor, torch.Tensor]:
         """Reparameterize to calculate entropy. """
@@ -181,14 +187,19 @@ class PolicyNet(nn.Module):
         noise = Normal(0, 1)
         z = noise.sample()  # sample noise in standard normal distribution
         
-        action = mean + std*z.to(self.device)    # shape: [batch_size, action_dim]
+        action = torch.tanh(mean + std*z.to(self.device))   # shape: [batch_size, action_dim]
         # calculate the entropy of the action
         log_prob = normal.log_prob(action) - torch.log(1 - torch.tanh(action).pow(2) + epsilon)
         log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
         
-        action_split = torch.chunk(action/10, chunks=2, dim=1)  # split the action into speed and yaw
-        action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
-        action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        action_split = torch.chunk(action, chunks=2, dim=1)     # split the action into speed and yaw
+        # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
+        # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        # extend the action to the actual range
+        action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
+                     (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
+        action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
+                     (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
         action = torch.cat((action_abs, action_arg), dim=1)     # shape: [batch_size, action_dim]
 
         return action, log_prob

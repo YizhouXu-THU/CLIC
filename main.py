@@ -46,7 +46,7 @@ def main():
     for round in range(rounds):
         if use_wandb:
             wandb_logger.log({'Round': round})
-        print('Round %d' % round)
+        print('Round %d' % (round+1))
         t1 = time.time()
         
         # 1. Sample
@@ -60,7 +60,7 @@ def main():
         success_rate = 1 - np.sum(y_train) / eval_size
         if use_wandb:
             wandb_logger.log({'Success rate': success_rate})
-        print('Success rate: %.3f' % success_rate)
+        print('    Success rate: %.3f' % success_rate)
         t3 = time.time()
         print('    Evaluation time: %.1fs' % (t3-t2))
 

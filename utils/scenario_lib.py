@@ -1,6 +1,5 @@
 import os
 import math
-import random
 import numpy as np
 import torch
 from utils.reward_predictor import reward_predictor
