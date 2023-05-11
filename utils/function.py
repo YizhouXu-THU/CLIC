@@ -5,12 +5,13 @@ import torch.nn as nn
 import torch.optim as optim
 
 from utils.av_policy import SAC
-from utils.env import Env
+from utils.environment import Env
 from utils.predictor import predictor
 
 
-def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray, size: int) -> np.ndarray:
+def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
     """Return the performance of the AV model in the given scenarios (collision: 1, otherwise: 0). """
+    size = scenarios.shape[0]
     labels = np.zeros(size)
     for i in range(size):
         state = env.reset(scenarios[i])
@@ -32,7 +33,7 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray, size: int) -> np.nd
 
 
 def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
-                    epochs=500, lr=1e-3, batch_size=128, wandb_logger=None) -> predictor:
+                    epochs=500, lr=1e-3, batch_size=64, wandb_logger=None) -> predictor:
     """Training process of supervised learning. """
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()

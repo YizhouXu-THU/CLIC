@@ -6,9 +6,9 @@ import torch
 
 from utils.scenario_lib import scenario_lib
 from utils.predictor import predictor
-from utils.env import Env
+from utils.environment import Env
 from utils.av_policy import SAC
-from utils.func import train_predictor, evaluate, train_av
+from utils.function import train_predictor, evaluate, train_av
 
 
 def main():
@@ -16,6 +16,7 @@ def main():
     t0 = time.time()
     
     eval_size = 256
+    batch_size = 64
     train_size = 100
     rounds = 10
     epochs = 500
@@ -56,7 +57,7 @@ def main():
         print('    Sampling time: %.1fs' % (t2-t1))
 
         # 2. Evaluate (Interact)
-        y_train = evaluate(av_model, env, scenarios=X_train, size=eval_size)
+        y_train = evaluate(av_model, env, scenarios=X_train)
         success_rate = 1 - np.sum(y_train) / eval_size
         if use_wandb:
             wandb_logger.log({'Success rate': success_rate})
@@ -65,7 +66,7 @@ def main():
         print('    Evaluation time: %.1fs' % (t3-t2))
 
         # 3. Train reward predictor
-        pred = train_predictor(pred, X_train, y_train, epochs=epochs, wandb_logger=wandb_logger)
+        pred = train_predictor(pred, X_train, y_train, epochs=epochs, batch_size=batch_size, wandb_logger=wandb_logger)
         t4 = time.time()
         print('    Training reward predictor time: %.1fs' % (t4-t3))
 

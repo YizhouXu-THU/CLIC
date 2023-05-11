@@ -10,7 +10,7 @@ if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
 else:
-    sys.exit('please declare environment variable "SUMO_HOME"')
+    sys.exit('please declare environment variable SUMO_HOME')
 
 
 class Env:
@@ -121,6 +121,7 @@ class Env:
         self.av_width = traci.vehicle.getWidth(av_id)
         self.bv_length = traci.vehicle.getLength(bv_id)
         self.bv_width = traci.vehicle.getWidth(bv_id)
+        self.av_max_speed = traci.vehicle.getMaxSpeed(av_id)
         
         # update the state of AV and BV
         self.av_pos[0] = self.scenario[0,2]
@@ -164,17 +165,19 @@ class Env:
         return state
     
     def step(self, av_action: np.ndarray, timestep: int) -> tuple[np.ndarray, float, bool, str]:
-        av_id = "AV.%d" % (self.current_episode - 1)
+        av_id = 'AV.%d' % (self.current_episode - 1)
         
         # move AV based on the input av_action and its current state
         v_x = self.av_vel[0] * np.cos(self.av_vel[1])
         v_y = self.av_vel[0] * np.sin(self.av_vel[1])
         v_x_ = (self.av_vel[0] + av_action[0]) * np.cos(self.av_vel[1] + av_action[1])
         v_y_ = (self.av_vel[0] + av_action[0]) * np.sin(self.av_vel[1] + av_action[1])
+        angle = -(self.av_vel[1] + av_action[1]) * 180 /np.pi + 90
         
         x = self.av_pos[0] + (v_x + v_x_) * self.delta_t / 2
         y = self.av_pos[1] + (v_y + v_y_) * self.delta_t / 2
-        traci.vehicle.moveToXY(av_id, edgeID='', lane=0, x=x, y=y, matchThreshold=self.road_len)
+        traci.vehicle.moveToXY(vehID=av_id, edgeID='', lane=0, x=x, y=y, 
+                               angle=angle, matchThreshold=self.road_len)
         
         # move BV based on the scenario data
         data = self.scenario[self.scenario[:, 0] == timestep]
@@ -199,23 +202,24 @@ class Env:
             self.bv_vel[i,0] = data[i,4]
             self.bv_vel[i,1] = data[i,5]
         
-        # TODO: modify reward function
+        # reward function
+        r_speed = (2 * self.av_vel[0] - self.av_max_speed) / self.av_max_speed  # encourage faster speed
+        r_yaw = -abs(self.av_vel[1]) / (np.pi / 6)  # punish sharp turns
+        reward = r_speed + r_yaw
         
         # return appropriate values based on the current state
         if not self.accident_detect():
             next_state = np.zeros(4 * (1 + self.max_bv_num), dtype=float)   # invalid state
-            reward = -1.0
+            reward -= 10    # punish collision
             done = True
             info = 'fail'
         else:
             if timestep == self.total_timestep:
                 next_state = np.zeros(4 * (1 + self.max_bv_num), dtype=float)   # invalid state
-                reward = 1.0
                 done = True
                 info = 'succeed'
             else:
                 next_state = self.get_state()
-                reward = 0.0
                 done = False
                 info = 'testing'
         
@@ -227,7 +231,7 @@ class Env:
         (not considering the situation of fully driving out of the boundary). 
         
         Detection principle: 
-        Calculate the minimum and maximum values of the y coordinates of the four vertices of AV 
+        Calculate the minimum and maximum values of the y coordinates of AV's four vertices 
         and compare them with the range of the road. 
         
         Collision detect: Detect if the AV has collided with BV. 

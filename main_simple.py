@@ -5,9 +5,9 @@ import wandb
 import torch
 
 from utils.scenario_lib import scenario_lib
-from utils.env import Env
+from utils.environment import Env
 from utils.av_policy import SAC
-from utils.func import evaluate, train_av
+from utils.function import evaluate, train_av
 
 
 def main():
@@ -52,7 +52,7 @@ def main():
         print('    Sampling time: %.1fs' % (t2-t1))
 
         # Evaluate (Interact)
-        y_train = evaluate(av_model, env, scenarios=X_train, size=eval_size)
+        y_train = evaluate(av_model, env, scenarios=X_train)
         success_rate = 1 - np.sum(y_train) / eval_size
         if use_wandb:
             wandb_logger.log({'Success rate': success_rate})
