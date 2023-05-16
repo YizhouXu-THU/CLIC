@@ -79,4 +79,4 @@ class scenario_lib:
         # index = labels[0, ::step].astype(int)
         # return index
         p = self.labels / np.sum(self.labels)
-        return np.random.choice(self.total_num, size=size, replace=False, p=self.labels)
+        return np.random.choice(self.total_num, size=size, replace=False, p=p)
