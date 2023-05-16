@@ -8,6 +8,7 @@ from utils.predictor import predictor
 class scenario_lib:
     def __init__(self, path='./scenario_lib/') -> None:
         self.path = path
+        self.max_bv_num = 0                     # initialize with 0
         self.type_count = []                    # count separately based on the number of bv
         self.data = self.load_data()
         self.total_num = self.data.shape[0]
