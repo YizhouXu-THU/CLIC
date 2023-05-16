@@ -14,11 +14,11 @@ def main():
     # Prepare
     t0 = time.time()
     
-    eval_size = 4096
+    eval_size = 1028
     train_size = 100
     rounds = 10
     episodes = 100
-    use_wandb = True
+    use_wandb = False
     sumo_gui = False
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     

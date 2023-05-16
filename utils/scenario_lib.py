@@ -8,8 +8,7 @@ from utils.predictor import predictor
 class scenario_lib:
     def __init__(self, path='./scenario_lib/') -> None:
         self.path = path
-        self.max_bv_num = 0                     # initialize with 0
-        self.count = []                         # count separately based on the number of bv
+        self.type_count = []                    # count separately based on the number of bv
         self.data = self.load_data()
         self.total_num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
@@ -25,7 +24,7 @@ class scenario_lib:
                 scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
                 data.append(scenario)
                 n += 1
-            self.count.append(n)
+            self.type_count.append(n)
         
         data = self.fill_zero(data)
         return np.array(data)
@@ -51,7 +50,7 @@ class scenario_lib:
 
     def sample(self, size: int) -> np.ndarray:
         """
-        Randomly sample some scenarios from the scenario library. 
+        Randomly sample some scenarios from the Scenario Library. 
 
         The sampled scenarios are used to evaluate AV model and train the Reward Predictor. 
 
@@ -65,16 +64,18 @@ class scenario_lib:
             label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
             self.labels[i] = label
     
-    def select(self, size: int) -> np.ndarray:  # TODO: sampling the scenario with labels as weights
+    def select(self, size: int) -> np.ndarray:
         """
-        Sort all scenarios by label and sample evenly according to the order. 
+        Sample scenarios with their labels as probability or weight. 
 
         The selected scenarios is used to train the AV model. 
 
         Return an array of index. 
         """
-        labels = np.stack((np.arange(self.total_num), self.labels))
-        labels = labels[:, np.argsort(labels[1])]   # sort by label
-        step = math.floor(self.total_num / (size-1))
-        index = labels[0, ::step].astype(int)
-        return index
+        # labels = np.stack((np.arange(self.total_num), self.labels))
+        # labels = labels[:, np.argsort(labels[1])]   # sort by label
+        # step = math.floor(self.total_num / (size-1))
+        # index = labels[0, ::step].astype(int)
+        # return index
+        
+        return np.random.choice(self.total_num, size=size, replace=False, p=self.labels)

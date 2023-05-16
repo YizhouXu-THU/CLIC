@@ -61,7 +61,7 @@ class Env:
         If the state does not have such a high dimension, which means bv_num < max_bv_num, 
         then it will be filled with 0 at the end. 
         """
-        ########## test ##########
+        #################### test ####################
         # traci.vehicle.add(vehID='AV', routeID='straight', typeID='AV')
         # traci.vehicle.moveToXY(vehID='AV', edgeID='', lane=0, x=10, y=0, angle=100)
         # traci.vehicle.add(vehID='BV', routeID='straight', typeID='BV')
@@ -77,7 +77,7 @@ class Env:
         # self.av_vel = np.array((10, -0.174533))
         # self.bv_vel = np.array((10, 0.5236)).reshape((1, -1))
         # accident = self.accident_detect()
-        ##########################
+        ##############################################
         
         # clear all vehicles
         for vehicle in traci.vehicle.getIDList():
