@@ -37,6 +37,12 @@ def main():
     
     t1 = time.time()
     print('    Preparation time: %.1fs' % (t1-t0))
+    
+    #################### test ####################
+    # all_label = evaluate(av_model, env, lib.data)
+    # success_rate = 1 - np.sum(all_label) / all_label.size
+    # print('Success rate: %.3f' % success_rate)
+    ##############################################
 
     # main loop
     for round in range(rounds):
