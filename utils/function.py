@@ -15,7 +15,7 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
     labels = np.zeros(size)
     for i in range(size):
         state = env.reset(scenarios[i])
-        done = 0
+        done = False
         step = 0
         
         while not done:
@@ -65,14 +65,19 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
 def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb_logger=None) -> SAC:
     """Training process of reinforcement learning. """
     for i in range(scenarios.shape[0]):
+        total_step = 0
+        scenario_success_count = 0
+        scenario_success_rate = 0.0
+        
         for episode in range(episodes):
             state = env.reset(scenarios[i])
             episode_reward = 0    # reward of each episode
-            done = 0
+            done = False
             step = 0
             
             while not done:
                 step += 1
+                total_step += 1
                 action = av_model.choose_action(state).cpu().numpy()
                 next_state, reward, done, info = env.step(action, timestep=step)
                 not_done = 0.0 if done else 1.0
@@ -80,7 +85,7 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
                 state = next_state
                 episode_reward += reward
 
-                if episode > 10:
+                if total_step > 200:
                     logger = av_model.train()
                     if wandb_logger is not None:
                         wandb_logger.log({
@@ -105,8 +110,15 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
                 if done:
                     break
             
+            if info == 'succeed':
+                scenario_success_count += 1
+            scenario_success_rate = scenario_success_count / (episode+1)
             if wandb_logger is not None:
-                wandb_logger.log({'episode_reward': episode_reward})
+                wandb_logger.log({
+                    'scenario_success_count': scenario_success_count, 
+                    'scenario_success_rate': scenario_success_rate, 
+                    'episode_reward': episode_reward, 
+                    })
             print('    Episode: ', episode+1, 'Reward: %.2f' % episode_reward, info)
     
     return av_model

@@ -184,7 +184,7 @@ class Env:
         data = self.scenario[self.scenario[:, 0] == timestep]
         for i in range(self.bv_num):
             bv_id = 'BV.%d' % (i+1)
-            angle = -data[i, 5] * 180 / np.pi + 90
+            angle = -data[i,5] * 180 / np.pi + 90
             traci.vehicle.moveToXY(vehID=bv_id, edgeID='', lane=0, x=data[i,2], y=data[i,3], 
                                    angle=angle, matchThreshold=self.road_len)
         
