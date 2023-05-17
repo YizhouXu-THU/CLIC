@@ -55,7 +55,7 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
+        
         if wandb_logger is not None:
             wandb_logger.log({'Predictor loss': total_loss/total_size})
     
@@ -99,9 +99,14 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
                             'policy_loss': logger['policy_loss'], 
                             'alpha': logger['alpha'], 
                             'alpha_loss': logger['alpha_loss'], 
+                            'reward': reward, 
                         })
                 
                 if done:
                     break
+            
+            if wandb_logger is not None:
+                wandb_logger.log({'episode_reward': episode_reward})
+            print('    Episode: ', episode+1, 'Reward: %.2f' % episode_reward, info)
     
     return av_model

@@ -33,6 +33,7 @@ class Memory:
         self.device = device
 
     def store_transition(self, data: tuple[np.ndarray, np.ndarray, float, np.ndarray, float]) -> None:
+        """data: (state, action, reward, next_state, not_done)"""
         self.memory.append(data)
     
     def memory_len(self) -> int:
@@ -48,7 +49,7 @@ class Memory:
         next_state_list = []
         not_done_list = []
 
-        batch_size = min(BATCH_SIZE, len(self.memory))
+        batch_size = min(BATCH_SIZE, self.memory_len())
         batch = random.sample(self.memory, batch_size)
         
         # put the experience into the corresponding container according to type
@@ -216,7 +217,7 @@ class SAC:
         self.q1_net = SoftQNet(env).to(device)
         self.q2_net = SoftQNet(env).to(device)
         self.policy_net = PolicyNet(env, device=device).to(device)
-        self.log_alpha = ScalarNet(init_value=-0.001).to(device)
+        self.log_alpha = ScalarNet(init_value=0).to(device)
         
         # initialize target network (with the same form as the soft update process)
         for target_param, param in zip(self.target_value_net.parameters(), self.value_net.parameters()):

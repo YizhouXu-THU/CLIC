@@ -75,6 +75,8 @@ def main():
             wandb_logger.log({'Round time': t7-t1, 'Total time': t7-t0})
         print('    Time of the whole round: %.1fs' % (t7-t1))
         print('Total time: %.1fs\n' % (t7-t0))
+    
+    env.close()
 
 
 if __name__ == '__main__':

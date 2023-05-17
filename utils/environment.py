@@ -297,3 +297,6 @@ class Env:
                         return False
         
         return True
+    
+    def close(self) -> None:
+        traci.close()
