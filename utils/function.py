@@ -39,6 +39,7 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
     loss_function = nn.CrossEntropyLoss()
     total_size = y_train.size
 
+    model.train()
     for epoch in range(epochs):
         total_loss = 0.0
         # shuffle

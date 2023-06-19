@@ -78,5 +78,5 @@ class scenario_lib:
         # step = math.floor(self.total_num / (size-1))
         # index = labels[0, ::step].astype(int)
         # return index
-        p = self.labels / np.sum(self.labels)
+        p = self.labels / np.sum(self.labels)   # normalization
         return np.random.choice(self.total_num, size=size, replace=False, p=p)
