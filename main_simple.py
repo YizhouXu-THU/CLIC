@@ -14,15 +14,15 @@ def main():
     # Prepare
     t0 = time.time()
     
-    eval_size = 1028
+    eval_size = 4096
     train_size = 100
     rounds = 10
     episodes = 100
-    use_wandb = False
+    use_wandb = True
     sumo_gui = False
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
-    lib = scenario_lib(path='./scenario_lib_test/')
+    lib = scenario_lib(path='./scenario_lib/')
     env = Env(max_bv_num=lib.max_bv_num, gui=sumo_gui)
     av_model = SAC(env, device=device)
     
@@ -38,11 +38,11 @@ def main():
     t1 = time.time()
     print('    Preparation time: %.1fs' % (t1-t0))
     
-    #################### test ####################
+    ######################### test #########################
     # all_label = evaluate(av_model, env, lib.data)
     # success_rate = 1 - np.sum(all_label) / all_label.size
     # print('Success rate: %.3f' % success_rate)
-    ##############################################
+    ########################################################
 
     # main loop
     for round in range(rounds):

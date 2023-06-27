@@ -7,7 +7,7 @@ from torch.nn import functional as F
 class predictor(nn.Module):
     def __init__(self, num_input: int, num_hidden=256, num_output=2, device='cuda', dropout=False) -> None:
         super().__init__()
-        self.device = device
+        # self.device = device
         self.fc1 = nn.Linear(num_input, num_hidden)
         self.fc2 = nn.Linear(num_hidden, num_hidden)
         self.fc3 = nn.Linear(num_hidden, num_output)

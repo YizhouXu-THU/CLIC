@@ -61,6 +61,7 @@ class scenario_lib:
     
     def labeling(self, predictor: predictor) -> None:
         """Label each scenario using the Difficulty Predictor. """
+        predictor.eval()
         for i in range(self.total_num):
             label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
             self.labels[i] = label
@@ -78,5 +79,5 @@ class scenario_lib:
         # step = math.floor(self.total_num / (size-1))
         # index = labels[0, ::step].astype(int)
         # return index
-        p = self.labels / np.sum(self.labels)   # normalization
+        p = self.labels / np.sum(self.labels)
         return np.random.choice(self.total_num, size=size, replace=False, p=p)

@@ -15,18 +15,20 @@ def main():
     # 0. Prepare
     t0 = time.time()
     
-    eval_size = 1028
+    eval_size = 4096
     batch_size = 64
     train_size = 100
     rounds = 10
-    epochs = 500
+    epochs = 100
     episodes = 100
-    use_wandb = False
+    learning_rate = 1e-4
+    use_wandb = True
     sumo_gui = False
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
-    lib = scenario_lib(path='./scenario_lib_test/')
+    lib = scenario_lib(path='./scenario_lib/')
     pred = predictor(num_input=lib.max_dim, device=device)
+    pred.to(device)
     env = Env(max_bv_num=lib.max_bv_num, gui=sumo_gui)
     av_model = SAC(env, device=device)
     
@@ -66,7 +68,8 @@ def main():
         print('    Evaluation time: %.1fs' % (t3-t2))
 
         # 3. Train reward predictor
-        pred = train_predictor(pred, X_train, y_train, epochs=epochs, batch_size=batch_size, wandb_logger=wandb_logger)
+        pred = train_predictor(pred, X_train, y_train, epochs=epochs, lr=learning_rate, 
+                               batch_size=batch_size, wandb_logger=wandb_logger, device=device)
         t4 = time.time()
         print('    Training reward predictor time: %.1fs' % (t4-t3))
 
@@ -90,7 +93,7 @@ def main():
             wandb_logger.log({'Round time': t7-t1, 'Total time': t7-t0})
         print('    Time of the whole round: %.1fs' % (t7-t1))
         print('Total time: %.1fs\n' % (t7-t0))
-    
+
     env.close()
 
 

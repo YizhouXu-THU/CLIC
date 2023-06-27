@@ -228,8 +228,7 @@ class Env:
     
     def accident_detect(self) -> bool:
         """
-        Lane detect: Detect if the AV has partially driven out of the road boundary 
-        (not considering the situation of fully driving out of the boundary). 
+        Lane detect: Detect if the AV has driven out of the road boundary. 
         
         Detection principle: 
         Calculate the minimum and maximum values of the y coordinates of AV's four vertices 

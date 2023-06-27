@@ -33,13 +33,12 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
 
 
 def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
-                    epochs=500, lr=1e-3, batch_size=64, wandb_logger=None) -> predictor:
+                    epochs=500, lr=1e-4, batch_size=64, wandb_logger=None, device='cuda') -> predictor:
     """Training process of supervised learning. """
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()
     total_size = y_train.size
 
-    model.train()
     for epoch in range(epochs):
         total_loss = 0.0
         # shuffle
@@ -49,8 +48,9 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
         for iteration in range(math.ceil(total_size/batch_size)):
             X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
             y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
-            out = model(torch.FloatTensor(X))
-            y = torch.tensor(y)
+            X = torch.tensor(X).to(device)
+            y = torch.tensor(y).to(device)
+            out = model(X)
             loss = loss_function(out, y)
             total_loss += loss.item()
             optimizer.zero_grad()
