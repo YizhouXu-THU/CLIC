@@ -22,7 +22,7 @@ def main():
     sumo_gui = False
     device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
-    lib = scenario_lib(path='./scenario_lib/')
+    lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/scenario_lib/')
     env = Env(max_bv_num=lib.max_bv_num, gui=sumo_gui)
     av_model = SAC(env, device=device)
     

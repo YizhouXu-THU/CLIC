@@ -160,9 +160,11 @@ class Env:
         bv_state = np.concatenate((bv_rel_dis, self.bv_vel), axis=1)
         state = np.concatenate((av_state, bv_state), axis=0)    # shapes (bv_num+1, 4)
         state = state.reshape(-1)   # flatten
+        
         # add 0 to the maximum dimension at the end of the state
         zero_num = (self.max_bv_num - self.bv_num) * 4
         state = np.concatenate((state, np.zeros(zero_num)))
+        
         return state
     
     def step(self, av_action: np.ndarray, timestep: int) -> tuple[np.ndarray, float, bool, str]:
@@ -258,7 +260,7 @@ class Env:
                                         - self.av_length    * np.cos(self.av_vel[1])
         av_vertex[3,1] = self.av_pos[1] - self.av_width / 2 * np.cos(self.av_vel[1]) \
                                         - self.av_length    * np.sin(self.av_vel[1])
-
+        
         for i in range(self.bv_num):
             bv_vertex[i,0,0] = self.bv_pos[i,0] - self.bv_width / 2 * np.sin(self.bv_vel[i,1])
             bv_vertex[i,0,1] = self.bv_pos[i,1] + self.bv_width / 2 * np.cos(self.bv_vel[i,1])

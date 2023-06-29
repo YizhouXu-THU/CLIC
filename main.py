@@ -26,7 +26,7 @@ def main():
     sumo_gui = False
     device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
-    lib = scenario_lib(path='./scenario_lib/')
+    lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/scenario_lib/')
     pred = predictor(num_input=lib.max_dim, device=device)
     pred.to(device)
     env = Env(max_bv_num=lib.max_bv_num, gui=sumo_gui)
@@ -74,7 +74,7 @@ def main():
         print('    Training reward predictor time: %.1fs' % (t4-t3))
 
         # 4. Labeling
-        lib.labeling(pred)
+        lib.labeling(pred, device=device)
         t5 = time.time()
         print('    Labeling time: %.1fs' % (t5-t4))
 

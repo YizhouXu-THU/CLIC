@@ -16,13 +16,20 @@ class predictor(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # if isinstance(x, np.ndarray):
-        #     x = torch.tensor(x, dtype=torch.float).to(self.device)
+        #     x = torch.tensor(x, dtype=torch.float32).to(self.device)
+        res = x
         if self.dropout:
-            x = F.relu(self.dropout_layer(self.fc1(x)))
-            x = F.relu(self.dropout_layer(self.fc2(x)))
+            x = self.dropout_layer(self.fc1(x))
+            x = F.relu(x)
+            x = self.dropout_layer(self.fc2(x))
+            x += res
+            x = F.relu(x)
         else:
-            x = F.relu(self.fc1(x))
-            x = F.relu(self.fc2(x))
-        x = 2 * torch.tanh(self.fc3(x)) # soft clip
-        output = F.softmax(x, dim=-1)[:,-1]
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.fc2(x)
+            x += res
+            x = F.relu(x)
+        output = 2 * torch.tanh(self.fc3(x))    # soft clip
+        # output = F.softmax(output, dim=-1)[:,-1]
         return output

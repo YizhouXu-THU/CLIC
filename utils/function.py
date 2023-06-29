@@ -10,7 +10,7 @@ from utils.predictor import predictor
 
 
 def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
-    """Return the performance of the AV model in the given scenarios (collision: 1, otherwise: 0). """
+    """Return the performance of the AV model in the given scenarios (accident: 1, otherwise: 0). """
     size = scenarios.shape[0]
     labels = np.zeros(size)
     for i in range(size):
@@ -33,7 +33,7 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
 
 
 def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
-                    epochs=500, lr=1e-4, batch_size=64, wandb_logger=None, device='cuda') -> predictor:
+                    epochs=100, lr=1e-4, batch_size=64, wandb_logger=None, device='cuda') -> predictor:
     """Training process of supervised learning. """
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()

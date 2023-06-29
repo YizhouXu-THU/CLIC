@@ -59,12 +59,14 @@ class scenario_lib:
         """
         return np.random.randint(self.total_num, size=size)
     
-    def labeling(self, predictor: predictor) -> None:
+    def labeling(self, predictor: predictor, device='cuda') -> None:
         """Label each scenario using the Difficulty Predictor. """
         predictor.eval()
-        for i in range(self.total_num):
-            label = predictor(torch.FloatTensor(self.data[i]).unsqueeze(dim=0)).item()
-            self.labels[i] = label
+        with torch.no_grad():
+            for i in range(self.total_num):
+                scenario = torch.FloatTensor(self.data[i], device=device).unsqueeze(dim=0)
+                label = predictor(scenario).item()
+                self.labels[i] = label
     
     def select(self, size: int) -> np.ndarray:
         """

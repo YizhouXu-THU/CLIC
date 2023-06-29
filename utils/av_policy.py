@@ -161,11 +161,11 @@ class PolicyNet(nn.Module):
     
     def choose_action(self, state: np.ndarray) -> torch.Tensor:
         """Sample action based on state. """
-        state = torch.FloatTensor(state).to(self.device) # transform state to a tensor
+        state = torch.FloatTensor(state).to(self.device)
         mean, log_std = self.forward(state)
         std = log_std.exp()    
         normal = Normal(mean, std)  # construct normal distribution for action sampling    
-        action = normal.sample()    # sample action in the generated normal distribution; shape: action_dim
+        action = normal.sample()    # sample action in the generated normal distribution; shape: [action_dim]
         action = torch.tanh(action).detach()
 
         action_split = torch.chunk(action, chunks=2, dim=0)     # split the action into speed and yaw
@@ -261,7 +261,7 @@ class SAC:
         q2_value_loss = F.mse_loss(q2_value, target_q_value.detach())
 
         # policy loss function
-        policy_loss = torch.Tensor((alpha * log_prob - torch.min(new_q1_value, new_q2_value)).mean())
+        policy_loss = torch.tensor((alpha * log_prob - torch.min(new_q1_value, new_q2_value)).mean())
 
         # update parameters
         self.value_optimizer.zero_grad()
