@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -9,46 +10,77 @@ from utils.scenario_lib import scenario_lib
 from utils.predictor import predictor
 from utils.environment import Env
 from utils.av_policy import SAC
-from utils.function import evaluate
+from utils.function import evaluate, train_predictor
 
 
 def main():
     # Prepare
     eval_size = 4096
+    batch_size = 64
     epochs = 100
     learning_rate = 1e-4
     sumo_gui = False
     device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
-    lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/scenario_lib/')
-    pred = predictor(num_input=lib.max_dim, device=device)
+    # lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/scenario_lib/')
+    # pred = predictor(num_input=lib.max_dim, device=device)
+    # pred.to(device)
+    # criterion = nn.CrossEntropyLoss()
+    # optimizer = optim.Adam(pred.parameters(), lr=learning_rate)
+    # env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/config/lane.sumocfg', gui=sumo_gui)
+    # av_model = SAC(env, device=device)
+    
+    # all_label = evaluate(av_model, env, scenarios=lib.data)
+    # success_rate = 1 - np.sum(all_label) / all_label.size
+    # print('Success rate: %.3f' % success_rate)
+    
+    # all_data = np.append(lib.data, all_label.reshape(-1,1), axis=1)
+    # np.save('/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/all_data.npy', all_data)
+    
+    all_data = np.load('/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/all_data.npy')
+    X = all_data[:, :-1]
+    y = all_data[:, -1].reshape(-1)
+    total_num, max_dim = X.shape
+    test_size = total_num - eval_size
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
+    
+    pred = predictor(num_input=max_dim, device=device)
     pred.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(pred.parameters(), lr=learning_rate)
-    env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/config/lane.sumocfg', gui=sumo_gui)
-    av_model = SAC(env, device=device)
+    # optimizer = optim.Adam(pred.parameters(), lr=learning_rate)
+    optimizer = optim.SGD(pred.parameters(), lr=learning_rate, momentum=0.9)
     
-    all_label = evaluate(av_model, env, scenarios=lib.data)
-    success_rate = 1 - np.sum(all_label) / all_label.size
-    print('    Success rate: %.3f' % success_rate)
-
-    test_size = lib.total_num - eval_size
-    X_train, X_test, y_train, y_test = train_test_split(lib.data, all_label, test_size=test_size)
+    # pred = train_predictor(pred, X_train, y_train, epochs=epochs, lr=learning_rate, 
+    #                        batch_size=batch_size, device=device)
     
+    total_size = y_train.size
+    batch_num = math.ceil(total_size/batch_size)
     for epoch in range(epochs):
-        pred.train()
-        out = pred(torch.tensor(X_train, dtype=torch.float32, device=device))
-        y_train = torch.tensor(y_train, dtype=torch.int64, device=device)
-        loss = criterion(out, y_train)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        total_loss = 0.0
+        total_correct = 0
+        # shuffle
+        data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
+        np.random.shuffle(data_train)
         
-        y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
-        y_train = y_train.data.cpu().numpy().squeeze()
-        accuracy = sum(y_pred == y_train) / eval_size
-        print('Epoch:', epoch+1, ' train loss: %.4f' % loss.item(), ' train accuracy: %.4f' % accuracy, end='    ')
+        for iteration in range(batch_num):
+            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
+            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
+            X = torch.tensor(X, dtype=torch.float32, device=device)
+            y = torch.tensor(y, dtype=torch.int64, device=device)
+            
+            out = pred(X)
+            loss = criterion(out, y)
+            total_loss += loss.item()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
+            y = y.data.cpu().numpy().squeeze()
+            total_correct += sum(y_pred == y)
         
+        accuracy = total_correct / total_size
+        print('Epoch:', epoch+1, ' train loss: %.4f' % (total_loss/batch_num), ' train accuracy: %.4f' % accuracy, end='    ')
         
         with torch.no_grad():
             pred.eval()
@@ -61,7 +93,7 @@ def main():
         accuracy = sum(y_pred == y_test) / test_size
         print('test loss: %.4f' % loss.item(), ' test accuracy: %.4f' % accuracy)
     
-    env.close()
+    # env.close()
 
 
 if __name__ == '__main__':

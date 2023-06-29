@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 
 from utils.av_policy import SAC
 from utils.environment import Env
@@ -35,30 +36,42 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
 def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
                     epochs=100, lr=1e-4, batch_size=64, wandb_logger=None, device='cuda') -> predictor:
     """Training process of supervised learning. """
-    optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.CrossEntropyLoss()
+    # optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     total_size = y_train.size
+    batch_num = math.ceil(total_size/batch_size)
 
+    model.train()
     for epoch in range(epochs):
         total_loss = 0.0
+        total_correct = 0
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
         np.random.shuffle(data_train)
         
-        for iteration in range(math.ceil(total_size/batch_size)):
+        for iteration in range(batch_num):
             X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
             y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
-            X = torch.tensor(X).to(device)
-            y = torch.tensor(y).to(device)
+            X = torch.tensor(X, dtype=torch.float32, device=device)
+            y = torch.tensor(y, dtype=torch.int64, device=device)
+            
             out = model(X)
             loss = loss_function(out, y)
             total_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            
+            y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
+            y = y.data.cpu().numpy().squeeze()
+            total_correct += sum(y_pred == y)
         
         if wandb_logger is not None:
-            wandb_logger.log({'Predictor loss': total_loss/total_size})
+            wandb_logger.log({'Predictor loss': total_loss/batch_num})
+        
+        accuracy = total_correct / total_size
+        print('Epoch:', epoch+1, ' train loss: %.4f' % (total_loss/batch_num), ' train accuracy: %.4f' % accuracy)
     
     return model
 
