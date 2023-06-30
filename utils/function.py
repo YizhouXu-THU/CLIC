@@ -12,9 +12,9 @@ from utils.predictor import predictor
 
 def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
     """Return the performance of the AV model in the given scenarios (accident: 1, otherwise: 0). """
-    size = scenarios.shape[0]
-    labels = np.zeros(size)
-    for i in range(size):
+    scenario_num = scenarios.shape[0]
+    labels = np.zeros(scenario_num)
+    for i in range(scenario_num):
         state = env.reset(scenarios[i])
         done = False
         step = 0
@@ -63,29 +63,33 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
             loss.backward()
             optimizer.step()
             
-            y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
-            y = y.data.cpu().numpy().squeeze()
-            total_correct += sum(y_pred == y)
+            # y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
+            # y = y.data.cpu().numpy().squeeze()
+            # total_correct += sum(y_pred == y)
+        
+        total_loss /= batch_num
+        # accuracy = total_correct / total_size
+        # print('Epoch:', epoch+1, ' train loss: %.4f' % (total_loss/batch_num), ' train accuracy: %.4f' % accuracy)
+        print('Epoch:', epoch+1, ' train loss: %.4f' % total_loss)
         
         if wandb_logger is not None:
-            wandb_logger.log({'Predictor loss': total_loss/batch_num})
-        
-        accuracy = total_correct / total_size
-        print('Epoch:', epoch+1, ' train loss: %.4f' % (total_loss/batch_num), ' train accuracy: %.4f' % accuracy)
+            wandb_logger.log({'Predictor loss': total_loss})
     
     return model
 
 
 def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb_logger=None) -> SAC:
     """Training process of reinforcement learning. """
-    for i in range(scenarios.shape[0]):
-        total_step = 0
-        scenario_success_count = 0
-        scenario_success_rate = 0.0
+    total_step = 0
+    for episode in range(episodes):
+        np.random.shuffle(scenarios)
         
-        for episode in range(episodes):
+        scenario_num = scenarios.shape[0]
+        success_count = 0
+        
+        for i in range(scenario_num):
             state = env.reset(scenarios[i])
-            episode_reward = 0    # reward of each episode
+            scenario_reward = 0     # reward of each scenario
             done = False
             step = 0
             
@@ -97,7 +101,7 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
                 not_done = 0.0 if done else 1.0
                 av_model.memory.store_transition((state, action, reward, next_state, not_done))
                 state = next_state
-                episode_reward += reward
+                scenario_reward += reward
 
                 if total_step > 200:
                     logger = av_model.train()
@@ -120,19 +124,21 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
                             'alpha_loss': logger['alpha_loss'], 
                             'reward': reward, 
                         })
-                
-                if done:
-                    break
             
             if info == 'succeed':
-                scenario_success_count += 1
-            scenario_success_rate = scenario_success_count / (episode+1)
+                success_count += 1
+            print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.2f ' % scenario_reward, info)
             if wandb_logger is not None:
                 wandb_logger.log({
-                    'scenario_success_count': scenario_success_count, 
-                    'scenario_success_rate': scenario_success_rate, 
-                    'episode_reward': episode_reward, 
+                    'episode_reward': scenario_reward, 
                     })
-            print('    Episode: ', episode+1, 'Reward: %.2f' % episode_reward, info)
+        
+        success_rate = success_count / scenario_num
+        print('    Episode:', episode+1, ' Success rate: %.2f' % success_rate)
+        if wandb_logger is not None:
+            wandb_logger.log({
+                'success_count': success_count, 
+                'success_rate': success_rate, 
+                })
     
     return av_model

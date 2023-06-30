@@ -6,8 +6,9 @@ from utils.predictor import predictor
 
 
 class scenario_lib:
-    def __init__(self, path='./scenario_lib/') -> None:
+    def __init__(self, path='./scenario_lib/', npy_path: str = None) -> None:
         self.path = path
+        self.npy_path = npy_path
         self.max_bv_num = 0                     # initialize with 0
         self.type_count = []                    # count separately based on the number of bv
         self.data = self.load_data()
@@ -17,26 +18,35 @@ class scenario_lib:
     
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
-        data = []
-        for subpath in os.listdir(self.path):
-            self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
-            n = 0
-            for filename in os.listdir(self.path+subpath):
-                scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
-                data.append(scenario)
-                n += 1
-            self.type_count.append(n)
-        
-        data = self.fill_zero(data)
-        return np.array(data)
+        if os.path.exists(self.npy_path):
+            data = np.load(self.npy_path)
+            data = data[:, :-1]
+            for subpath in os.listdir(self.path):
+                self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
+                n = 0
+                for filename in os.listdir(self.path+subpath):
+                    n += 1
+                self.type_count.append(n)
+        else:
+            data = []
+            for subpath in os.listdir(self.path):
+                self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
+                n = 0
+                for filename in os.listdir(self.path+subpath):
+                    scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
+                    data.append(scenario)
+                    n += 1
+                self.type_count.append(n)
+            data = self.fill_zero(data)
+        return data
     
-    def fill_zero(self, data: list[np.ndarray]) -> list[np.ndarray]:
+    def fill_zero(self, data: list[np.ndarray]) -> np.ndarray:
         """
         Fill 0 in the vacant part of other scenarios based on the largest dimension of all input scenarios. 
 
-        Return a list of scenarios filled with 0 on the input scenarios. 
+        Return an array of scenarios filled with 0 on the input scenarios. 
         Each scenario is flattened into one dimension. 
-        So the shape of each scenario is (max_dim, ). 
+        So the shape of each scenario is (max_dim,), and the shape of the whole array is (scenario_num, max_dim).
         """
         r_max = 0
         for i in range(len(data)):
@@ -47,7 +57,7 @@ class scenario_lib:
         for i in range(len(data)):
             r = data[i].shape[0]
             data[i] = np.pad(data[i], ((0,r_max-r),(0,0)), 'constant', constant_values=(0,0)).flatten()
-        return data
+        return np.array(data)
 
     def sample(self, size: int) -> np.ndarray:
         """

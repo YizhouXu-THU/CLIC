@@ -210,6 +210,7 @@ class SAC:
     def __init__(self, env, device='cuda') -> None:
         self.state_dim = env.state_dim
         self.action_dim = env.action_dim
+        self.device = device
 
         # initialize networks
         self.value_net = ValueNet(env).to(device)
@@ -261,7 +262,8 @@ class SAC:
         q2_value_loss = F.mse_loss(q2_value, target_q_value.detach())
 
         # policy loss function
-        policy_loss = torch.tensor((alpha * log_prob - torch.min(new_q1_value, new_q2_value)).mean())
+        policy_loss = (alpha * log_prob - torch.min(new_q1_value, new_q2_value)).mean()
+        policy_loss = torch.as_tensor(policy_loss, device=self.device)
 
         # update parameters
         self.value_optimizer.zero_grad()
