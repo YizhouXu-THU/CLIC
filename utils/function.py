@@ -127,7 +127,7 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
             
             if info == 'succeed':
                 success_count += 1
-            print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.2f ' % scenario_reward, info)
+            # print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.2f ' % scenario_reward, info)
             if wandb_logger is not None:
                 wandb_logger.log({
                     'episode_reward': scenario_reward, 

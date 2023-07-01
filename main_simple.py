@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
-import numpy as np
 import wandb
+import numpy as np
 import torch
 
 from utils.scenario_lib import scenario_lib

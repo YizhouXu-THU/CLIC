@@ -15,7 +15,7 @@ from utils.function import evaluate, train_predictor
 
 # Prepare
 eval_size = 4096
-batch_size = 64
+batch_size = 128
 epochs = 100
 learning_rate = 1e-4
 sumo_gui = False

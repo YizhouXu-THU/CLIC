@@ -6,15 +6,15 @@ from utils.predictor import predictor
 
 
 class scenario_lib:
-    def __init__(self, path='./scenario_lib/', npy_path: str = None) -> None:
+    def __init__(self, path='./scenario_lib/', npy_path='./all_data.npy') -> None:
         self.path = path
         self.npy_path = npy_path
-        self.max_bv_num = 0                     # initialize with 0
-        self.type_count = []                    # count separately based on the number of bv
+        self.max_bv_num = 0                         # initialize with 0
+        self.type_count = []                        # count separately based on the number of bv
         self.data = self.load_data()
-        self.total_num = self.data.shape[0]
+        self.scenario_num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
-        self.labels = np.zeros(self.total_num)  # initialize with 0
+        self.labels = np.ones(self.scenario_num)    # initialize with 1
     
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
@@ -67,13 +67,13 @@ class scenario_lib:
 
         Return an array of index. 
         """
-        return np.random.randint(self.total_num, size=size)
+        return np.random.randint(self.scenario_num, size=size)
     
     def labeling(self, predictor: predictor, device='cuda') -> None:
         """Label each scenario using the Difficulty Predictor. """
         predictor.eval()
         with torch.no_grad():
-            for i in range(self.total_num):
+            for i in range(self.scenario_num):
                 scenario = torch.FloatTensor(self.data[i], device=device).unsqueeze(dim=0)
                 label = predictor(scenario).item()
                 self.labels[i] = label
@@ -92,4 +92,4 @@ class scenario_lib:
         # index = labels[0, ::step].astype(int)
         # return index
         p = self.labels / np.sum(self.labels)
-        return np.random.choice(self.total_num, size=size, replace=False, p=p)
+        return np.random.choice(self.scenario_num, size=size, replace=False, p=p)

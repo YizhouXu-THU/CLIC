@@ -10,10 +10,10 @@ from torch.distributions import Normal
 
 # hyperparameters
 BATCH_SIZE = 128
-LR_Q = 3e-4
-LR_VALUE = 3e-4
-LR_POLICY = 3e-4
-LR_ALPHA = 3e-4
+LR_Q = 1e-4
+LR_VALUE = 1e-4
+LR_POLICY = 1e-4
+LR_ALPHA = 1e-4
 GAMMA = 0.99
 TAU = 0.01
 TARGET_ENTROPY = 0.0
@@ -36,7 +36,7 @@ class Memory:
         """data: (state, action, reward, next_state, not_done)"""
         self.memory.append(data)
     
-    def memory_len(self) -> int:
+    def size(self) -> int:
         return len(self.memory)
 
     def sample(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -49,7 +49,7 @@ class Memory:
         next_state_list = []
         not_done_list = []
 
-        batch_size = min(BATCH_SIZE, self.memory_len())
+        batch_size = min(BATCH_SIZE, self.size())
         batch = random.sample(self.memory, batch_size)
         
         # put the experience into the corresponding container according to type

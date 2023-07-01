@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
-import numpy as np
 import wandb
+import numpy as np
 import torch
 
 from utils.scenario_lib import scenario_lib
@@ -15,7 +15,7 @@ from utils.function import train_predictor, evaluate, train_av
 t0 = time.time()
 
 eval_size = 4096
-batch_size = 64
+batch_size = 128
 train_size = 100
 rounds = 10
 epochs = 100

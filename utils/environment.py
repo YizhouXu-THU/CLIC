@@ -206,7 +206,8 @@ class Env:
             self.bv_vel[i,1] = data[i,5]
         
         # reward function
-        r_speed = (2 * self.av_vel[0] - self.av_max_speed) / self.av_max_speed  # encourage faster speed
+        # r_speed = (2 * self.av_vel[0] - self.av_max_speed) / self.av_max_speed  # encourage faster speed
+        r_speed = 0
         r_yaw = -abs(self.av_vel[1]) / (np.pi / 6)  # punish sharp turns
         reward = r_speed + r_yaw
         
@@ -219,6 +220,7 @@ class Env:
         else:
             if timestep == self.total_timestep:
                 next_state = np.zeros(4 * (1 + self.max_bv_num), dtype=float)   # invalid state
+                reward += 10    # encourage reaching the destination successfully
                 done = True
                 info = 'succeed'
             else:
