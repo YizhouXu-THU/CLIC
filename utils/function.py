@@ -21,7 +21,7 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
         
         while not done:
             step += 1
-            action = av_model.choose_action(state).cpu().numpy()
+            action = av_model.choose_action(state)
             next_state, reward, done, info = env.step(action, timestep=step)
             state = next_state
         
@@ -96,7 +96,7 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
             while not done:
                 step += 1
                 total_step += 1
-                action = av_model.choose_action(state).cpu().numpy()
+                action = av_model.choose_action(state)
                 next_state, reward, done, info = env.step(action, timestep=step)
                 not_done = 0.0 if done else 1.0
                 av_model.memory.store_transition((state, action, reward, next_state, not_done))

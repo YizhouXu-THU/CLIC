@@ -82,9 +82,9 @@ class ScalarNet(nn.Module):
 class ValueNet(nn.Module):
     """Critic"""
 
-    def __init__(self, env, edge=3e-3) -> None:
+    def __init__(self, state_dim: int, edge=3e-3) -> None:
         super(ValueNet, self).__init__()
-        self.linear1 = nn.Linear(env.state_dim, 256)
+        self.linear1 = nn.Linear(state_dim, 256)
         self.linear2 = nn.Linear(256, 256)
         self.linear3 = nn.Linear(256, 1)
 
@@ -104,9 +104,9 @@ class ValueNet(nn.Module):
 class SoftQNet(nn.Module):
     """Soft Q"""
 
-    def __init__(self, env, edge=3e-3) -> None:
+    def __init__(self, input_dim: int, edge=3e-3) -> None:
         super(SoftQNet, self).__init__()
-        self.linear1 = nn.Linear(env.state_dim + env.action_dim, 256)
+        self.linear1 = nn.Linear(input_dim, 256)
         self.linear2 = nn.Linear(256, 256)
         self.linear3 = nn.Linear(256, 1)
 
@@ -127,18 +127,19 @@ class SoftQNet(nn.Module):
 class PolicyNet(nn.Module):
     """Actor"""
 
-    def __init__(self, env, log_std_min=-20, log_std_max=2, edge=3e-3, device='cuda') -> None:
+    def __init__(self, state_dim: int, action_dim: int, action_range: np.ndarray, 
+                 log_std_min=-20, log_std_max=2, edge=3e-3, device='cuda') -> None:
         super(PolicyNet, self).__init__()
         self.device = device
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
-        self.action_range = env.action_range
+        self.action_range = action_range
 
-        self.linear1 = nn.Linear(env.state_dim, 256)
+        self.linear1 = nn.Linear(state_dim, 256)
         self.linear2 = nn.Linear(256, 256)
         
-        self.mean_linear = nn.Linear(256, env.action_dim)
-        self.log_std_linear = nn.Linear(256, env.action_dim)
+        self.mean_linear = nn.Linear(256, action_dim)
+        self.log_std_linear = nn.Linear(256, action_dim)
 
         # initialize the output layer
         self.mean_linear.weight.data.uniform_(-edge, edge)
@@ -187,11 +188,12 @@ class PolicyNet(nn.Module):
         normal = Normal(mean, std)
         noise = Normal(0, 1)
         z = noise.sample()  # sample noise in standard normal distribution
+        z = z.to(self.device)
         
-        action = torch.tanh(mean + std*z.to(self.device))   # shape: [batch_size, action_dim]
+        action = torch.tanh(mean + std*z)   # shape: [batch_size, action_dim]
         # calculate the entropy of the action
-        log_prob = normal.log_prob(action) - torch.log(1 - torch.tanh(action).pow(2) + epsilon)
-        log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
+        log_prob = normal.log_prob(mean + std*z) - torch.log(1 - action.pow(2) + epsilon)
+        log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation; shape: [batch_size, 1]
         
         action_split = torch.chunk(action, chunks=2, dim=1)     # split the action into speed and yaw
         # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
@@ -210,14 +212,16 @@ class SAC:
     def __init__(self, env, device='cuda') -> None:
         self.state_dim = env.state_dim
         self.action_dim = env.action_dim
+        self.action_range = env.action_range
         self.device = device
 
         # initialize networks
-        self.value_net = ValueNet(env).to(device)
-        self.target_value_net = ValueNet(env).to(device)
-        self.q1_net = SoftQNet(env).to(device)
-        self.q2_net = SoftQNet(env).to(device)
-        self.policy_net = PolicyNet(env, device=device).to(device)
+        self.value_net = ValueNet(state_dim=self.state_dim).to(device)
+        self.target_value_net = ValueNet(state_dim=self.state_dim).to(device)
+        self.q1_net = SoftQNet(input_dim=self.state_dim+self.action_dim).to(device)
+        self.q2_net = SoftQNet(input_dim=self.state_dim+self.action_dim).to(device)
+        self.policy_net = PolicyNet(state_dim=self.state_dim, action_dim=self.action_dim, 
+                                    action_range=self.action_range, device=device).to(device)
         self.log_alpha = ScalarNet(init_value=0).to(device)
         
         # initialize target network (with the same form as the soft update process)
@@ -234,9 +238,9 @@ class SAC:
         # initialize replay buffer
         self.memory = Memory(device=device)
 
-    def choose_action(self, state: np.ndarray) -> torch.Tensor:
+    def choose_action(self, state: torch.Tensor) -> np.ndarray:
         action = self.policy_net.choose_action(state)
-        return action
+        return action.cpu().numpy()
 
     def train(self) -> dict[str, float]:
         state, action, reward, next_state, not_done = self.memory.sample()

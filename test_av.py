@@ -1,7 +1,5 @@
-import time
 from datetime import datetime
 import wandb
-import numpy as np
 import torch
 
 from utils.scenario_lib import scenario_lib
@@ -13,7 +11,7 @@ eval_size = 4096
 train_size = 100
 episodes = 100
 learning_rate = 1e-4
-use_wandb = False
+use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
@@ -38,6 +36,7 @@ train_scenario = lib.data[index]
 total_step = 0
 
 for i in range(train_size):
+    print('Scenario:', i)
     scenario_success_count = 0
     scenario_success_rate = 0.0
 
@@ -50,7 +49,7 @@ for i in range(train_size):
         while not done:
             step += 1
             total_step += 1
-            action = av_model.choose_action(state).cpu().numpy()
+            action = av_model.choose_action(state)
             next_state, reward, done, info = env.step(action, timestep=step)
             not_done = 0.0 if done else 1.0
             av_model.memory.store_transition((state, action, reward, next_state, not_done))
