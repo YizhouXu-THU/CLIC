@@ -2,6 +2,7 @@ import os
 import math
 import numpy as np
 import torch
+import torch.nn.functional as F
 from utils.predictor import predictor
 
 
@@ -20,7 +21,7 @@ class scenario_lib:
         """Load all data under the path. """
         if os.path.exists(self.npy_path):
             data = np.load(self.npy_path)
-            data = data[:, :-1]
+            data = data[:, :-1]     # the last column is the predicted label and is not needed here
             for subpath in os.listdir(self.path):
                 self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
                 n = 0
@@ -69,13 +70,13 @@ class scenario_lib:
         """
         return np.random.randint(self.scenario_num, size=size)
     
-    def labeling(self, predictor: predictor, device='cuda') -> None:
+    def labeling(self, predictor: predictor) -> None:
         """Label each scenario using the Difficulty Predictor. """
         predictor.eval()
         with torch.no_grad():
             for i in range(self.scenario_num):
-                scenario = torch.FloatTensor(self.data[i], device=device).unsqueeze(dim=0)
-                label = predictor(scenario).item()
+                scenario = torch.tensor(self.data[i], dtype=torch.float32, device=predictor.device).unsqueeze(dim=0)
+                label = predictor(scenario)[:,1].item()
                 self.labels[i] = label
     
     def select(self, size: int) -> np.ndarray:

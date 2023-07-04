@@ -14,21 +14,23 @@ def evaluate(av_model: SAC, env: Env, scenarios: np.ndarray) -> np.ndarray:
     """Return the performance of the AV model in the given scenarios (accident: 1, otherwise: 0). """
     scenario_num = scenarios.shape[0]
     labels = np.zeros(scenario_num)
-    for i in range(scenario_num):
-        state = env.reset(scenarios[i])
-        done = False
-        step = 0
-        
-        while not done:
-            step += 1
-            action = av_model.choose_action(state)
-            next_state, reward, done, info = env.step(action, timestep=step)
-            state = next_state
-        
-        if info == 'fail':
-            labels[i] = 1
-        elif info == 'succeed':
-            labels[i] = 0
+    
+    with torch.no_grad():
+        for i in range(scenario_num):
+            state = env.reset(scenarios[i])
+            done = False
+            step = 0
+            
+            while not done:
+                step += 1
+                action = av_model.choose_action(state)
+                next_state, reward, done, info = env.step(action, timestep=step)
+                state = next_state
+            
+            if info == 'fail':
+                labels[i] = 1
+            elif info == 'succeed':
+                labels[i] = 0
     
     return labels
 
@@ -63,14 +65,14 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
             loss.backward()
             optimizer.step()
             
-            # y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
+            # y_pred = torch.max(out, dim=1)[1].data.cpu().numpy().squeeze()
             # y = y.data.cpu().numpy().squeeze()
             # total_correct += sum(y_pred == y)
         
         total_loss /= batch_num
         # accuracy = total_correct / total_size
         # print('Epoch:', epoch+1, ' train loss: %.4f' % (total_loss/batch_num), ' train accuracy: %.4f' % accuracy)
-        print('Epoch:', epoch+1, ' train loss: %.4f' % total_loss)
+        print('    Epoch:', epoch+1, ' train loss: %.4f' % total_loss)
         
         if wandb_logger is not None:
             wandb_logger.log({'Predictor loss': total_loss})
@@ -134,7 +136,7 @@ def train_av(av_model: SAC, env: Env, scenarios: np.ndarray, episodes=100, wandb
                     })
         
         success_rate = success_count / scenario_num
-        print('    Episode:', episode+1, ' Success rate: %.2f' % success_rate)
+        print('    Episode:', episode+1, ' Training success rate: %.2f' % success_rate)
         if wandb_logger is not None:
             wandb_logger.log({
                 'success_count': success_count, 

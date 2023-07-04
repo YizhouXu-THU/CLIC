@@ -75,7 +75,7 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
         
-        y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
+        y_pred = torch.max(out, dim=1)[1].data.cpu().numpy().squeeze()
         y = y.data.cpu().numpy().squeeze()
         total_correct += sum(y_pred == y)
     
@@ -88,7 +88,7 @@ for epoch in range(epochs):
         y_test = torch.tensor(y_test, dtype=torch.int64, device=device)
         loss = criterion(out, y_test)
     
-    y_pred = torch.max(F.softmax(out, dim=1), dim=1)[1].data.cpu().numpy().squeeze()
+    y_pred = torch.max(out, dim=1)[1].data.cpu().numpy().squeeze()
     y_test = y_test.data.cpu().numpy().squeeze()
     accuracy = sum(y_pred == y_test) / test_size
     print('test loss: %.4f' % loss.item(), ' test accuracy: %.4f' % accuracy)
