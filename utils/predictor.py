@@ -17,6 +17,7 @@ class predictor(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # if isinstance(x, np.ndarray):
         #     x = torch.tensor(x, dtype=torch.float32).to(self.device)
+        
         if self.dropout:
             x = self.dropout_layer(self.fc1(x))
             x = F.relu(x)
@@ -27,8 +28,9 @@ class predictor(nn.Module):
             x = F.relu(x)
             x = self.fc2(x)
             x = F.relu(x)
-        x = self.fc3(x)
-        output = 2 * torch.tanh(x)  # soft clip
-        # output = F.softmax(output, dim=1)[:,1]
-        output = F.softmax(output, dim=1)
-        return output   # shape: [batch_size, 2]
+        output = self.fc3(x)
+        
+        # output = 2 * torch.tanh(x)  # soft clip
+        output = F.softmax(output, dim=1)[:,1]
+        # output = F.softmax(output, dim=1)
+        return output   # probability of predicting positive samples; shape: [batch_size, 1]

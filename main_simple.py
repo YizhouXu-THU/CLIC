@@ -6,7 +6,7 @@ import torch
 
 from utils.scenario_lib import scenario_lib
 from utils.environment import Env
-from utils.av_policy import SAC
+from utils.av_policy import RL_brain
 from utils.function import evaluate, train_av
 
 
@@ -14,9 +14,12 @@ from utils.function import evaluate, train_av
 t0 = time.time()
 
 eval_size = 4096
-train_size = 100
+batch_size = 128
+train_size = 128
 rounds = 10
+epochs = 20
 episodes = 100
+learning_rate = 1e-4
 use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
@@ -26,7 +29,8 @@ lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-T
 env = Env(max_bv_num=lib.max_bv_num, 
           cfg_sumo='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/config/lane.sumocfg', 
           gui=sumo_gui)
-av_model = SAC(env, device=device)
+av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
+                    batch_size=batch_size, lr=learning_rate)
 
 if use_wandb:
     wandb_logger = wandb.init(
@@ -76,7 +80,8 @@ for round in range(rounds):
     print('    Selecting time: %.1fs' % (t7-t4))
 
     # Train AV model
-    av_model = train_av(av_model, env, scenarios=train_scenario, episodes=episodes, wandb_logger=wandb_logger)
+    av_model = train_av(av_model, env, scenarios=train_scenario, 
+                        epochs=epochs, episodes=episodes, wandb_logger=wandb_logger)
     t8 = time.time()
     print('    Training AV model time: %.1fs' % (t8-t7))
     

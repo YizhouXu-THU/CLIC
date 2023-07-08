@@ -3,6 +3,7 @@ import math
 import numpy as np
 import torch
 import torch.nn.functional as F
+
 from utils.predictor import predictor
 
 
@@ -11,6 +12,7 @@ class scenario_lib:
         self.path = path
         self.npy_path = npy_path
         self.max_bv_num = 0                         # initialize with 0
+        self.max_timestep = 0                       # initialize with 0
         self.type_count = []                        # count separately based on the number of bv
         self.data = self.load_data()
         self.scenario_num = self.data.shape[0]
@@ -19,26 +21,29 @@ class scenario_lib:
     
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
-        if os.path.exists(self.npy_path):
+        if os.path.exists(self.npy_path):   # load from .npy file
             data = np.load(self.npy_path)
             data = data[:, :-1]     # the last column is the predicted label and is not needed here
+            self.max_timestep = int(np.max(data[:, ::6]))
             for subpath in os.listdir(self.path):
                 self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
                 n = 0
                 for filename in os.listdir(self.path+subpath):
                     n += 1
                 self.type_count.append(n)
-        else:
+        else:   # load from original .csv files
             data = []
             for subpath in os.listdir(self.path):
                 self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
                 n = 0
                 for filename in os.listdir(self.path+subpath):
                     scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
+                    self.max_timestep = max(self.max_timestep, int(scenario[-1, 0]))
                     data.append(scenario)
                     n += 1
                 self.type_count.append(n)
             data = self.fill_zero(data)
+        self.max_timestep += 1  # starting from 0
         return data
     
     def fill_zero(self, data: list[np.ndarray]) -> np.ndarray:
@@ -76,7 +81,7 @@ class scenario_lib:
         with torch.no_grad():
             for i in range(self.scenario_num):
                 scenario = torch.tensor(self.data[i], dtype=torch.float32, device=predictor.device).unsqueeze(dim=0)
-                label = predictor(scenario)[:,1].item()
+                label = predictor(scenario).item()
                 self.labels[i] = label
     
     def select(self, size: int) -> np.ndarray:

@@ -1,9 +1,10 @@
 /scenario_lib/
 /scenario_lib_test/
+/log/
 /__pycache__/
 /.vscode/
 /utils/__pycache__/
 /lib_generation.py
-/scripts/
+/references/
 /wandb/
 /all_data.npy
