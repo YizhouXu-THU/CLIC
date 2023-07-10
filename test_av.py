@@ -5,7 +5,7 @@ import torch
 from utils.scenario_lib import scenario_lib
 from utils.av_policy import RL_brain
 from utils.environment import Env
-from utils.function import train_av
+from utils.function import train_av, train_av_online
 
 
 eval_size = 4096
@@ -38,6 +38,8 @@ else:
 index = lib.sample(size=train_size)
 train_scenario = lib.data[index]
 
+# av_model = train_av_online(av_model, env, scenarios=train_scenario, 
+#                            episodes=episodes, wandb_logger=wandb_logger)
 av_model = train_av(av_model, env, scenarios=train_scenario, 
                     epochs=epochs, episodes=episodes, wandb_logger=wandb_logger)
 
