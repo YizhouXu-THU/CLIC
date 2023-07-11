@@ -57,7 +57,10 @@ optimizer = optim.Adam(pred.parameters(), lr=learning_rate)
 
 total_size = y_train.size
 batch_num = math.ceil(total_size/batch_size)
+
 for epoch in range(epochs):
+    # train
+    pred.train()
     total_loss = 0.0
     total_correct = 0
     # shuffle
@@ -85,6 +88,7 @@ for epoch in range(epochs):
     accuracy = total_correct / total_size
     print('Epoch:', epoch+1, ' train loss: %.4f' % (total_loss/batch_num), ' train accuracy: %.4f' % accuracy, end='    ')
     
+    # validate
     with torch.no_grad():
         pred.eval()
         out = pred(torch.tensor(X_test, dtype=torch.float32, device=device))

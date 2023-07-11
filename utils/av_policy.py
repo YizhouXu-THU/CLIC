@@ -50,6 +50,9 @@ class ReplayBuffer:
                torch.FloatTensor(np.array(reward_list)).unsqueeze(-1).to(self.device), \
                torch.FloatTensor(np.array(next_state_list)).to(self.device), \
                torch.FloatTensor(np.array(not_done_list)).unsqueeze(-1).to(self.device)
+    
+    def clear(self) -> None:
+        self.memory.clear()
 
 
 class ScalarNet(nn.Module):

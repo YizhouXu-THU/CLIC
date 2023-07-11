@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
+from utils.av_policy_sac import SAC
 from utils.av_policy import RL_brain
 from utils.environment import Env
 from utils.predictor import predictor
@@ -23,7 +24,7 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
             
             while not done:
                 step += 1
-                action = av_model.choose_action(state)
+                action = av_model.choose_action(state, deterministic=False)
                 next_state, reward, done, info = env.step(action, timestep=step)
                 state = next_state
             
@@ -37,7 +38,11 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
 
 def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
                     epochs=20, lr=1e-4, batch_size=64, wandb_logger=None, device='cuda') -> predictor:
-    """Training process of supervised learning. """
+    """
+    Training process of supervised learning. 
+    
+    No validation process, no calculation of hard labels. 
+    """
     # loss_function = nn.CrossEntropyLoss()
     loss_function = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -75,8 +80,8 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
     return model
 
 
-def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray, 
-                    episodes=100, wandb_logger=None) -> RL_brain:
+def train_av_online(av_model: SAC, env: Env, scenarios: np.ndarray, 
+                    episodes=100, wandb_logger=None) -> SAC:
     """Training process of online reinforcement learning. """
     total_step = 0
     for episode in range(episodes):
@@ -148,6 +153,7 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
     for episode in range(episodes):
         # rollout & evaluate
         np.random.shuffle(scenarios)
+        av_model.replay_buffer.clear()  # clear previous transitions
         
         scenario_num = scenarios.shape[0]
         success_count = 0
