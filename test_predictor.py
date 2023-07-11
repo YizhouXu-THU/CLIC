@@ -20,23 +20,23 @@ epochs = 100
 learning_rate = 1e-4
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('eval_size:', eval_size, ' learning_rate:', learning_rate)
+# print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
-# lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/scenario_lib/', 
-#                    npy_path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/all_data.npy')
+# lib = scenario_lib(path='./scenario_lib/', 
+#                    npy_path='')
 # pred = predictor(num_input=lib.max_dim, device=device)
 # pred.to(device)
 # criterion = nn.CrossEntropyLoss()
 # optimizer = optim.Adam(pred.parameters(), lr=learning_rate)
-# env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/config/lane.sumocfg', gui=sumo_gui)
-# av_model = RL_brain(env, device=device)
+# env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
+# av_model = RL_brain(env, capacity=0, device=device)
 
 # all_label = evaluate(av_model, env, scenarios=lib.data)
 # success_rate = 1 - np.sum(all_label) / all_label.size
 # print('Success rate: %.3f' % success_rate)
 
 # all_data = np.append(lib.data, all_label.reshape(-1,1), axis=1)
-# np.save('/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/all_data.npy', all_data)
+# np.save('./all_data.npy', all_data)
 
 all_data = np.load('./all_data.npy')
 X = all_data[:, :-1]
