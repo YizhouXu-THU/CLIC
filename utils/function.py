@@ -143,7 +143,7 @@ def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray,
 
 
 def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray, 
-             epochs=20, episodes=100, wandb_logger=None) -> RL_brain:
+             epochs=20, episodes=20, wandb_logger=None) -> RL_brain:
     """Training process of offline reinforcement learning. """
     for episode in range(episodes):
         # rollout & evaluate

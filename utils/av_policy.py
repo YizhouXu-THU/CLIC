@@ -30,8 +30,6 @@ class ReplayBuffer:
 
     def sample(self, batch_size=128) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """sample a batch of experience to train"""
-
-        # initialize temporary container
         state_list = []
         action_list = []
         reward_list = []
@@ -39,8 +37,6 @@ class ReplayBuffer:
         not_done_list = []
 
         batch = random.sample(self.memory, min(batch_size, self.size()))
-        
-        # put the experience into the corresponding container according to type
         for experience in batch:
             state, action, reward, next_state, not_done = experience
             state_list.append(state)
