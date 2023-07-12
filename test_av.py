@@ -5,7 +5,7 @@ import torch
 from utils.scenario_lib import scenario_lib
 from utils.av_policy import RL_brain
 from utils.environment import Env
-from utils.function import train_av, train_av_online
+from utils.function import train_av_online, train_av
 
 
 eval_size = 4096
@@ -14,12 +14,12 @@ train_size = 128
 epochs = 20
 episodes = 20
 learning_rate = 1e-4
-use_wandb = False
+use_wandb = True
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='./scenario_lib/', 
-                   npy_path='./all_data.npy')
+lib = scenario_lib(path='./scenario_lib_crash/', 
+                   npy_path='./crash_data.npy')
 env = Env(max_bv_num=lib.max_bv_num, 
           cfg_sumo='./config/lane.sumocfg', 
           gui=sumo_gui)

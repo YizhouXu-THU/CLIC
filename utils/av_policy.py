@@ -102,7 +102,7 @@ class SoftQNet(nn.Module):
         self.linear3.bias.data.uniform_(-edge, edge)
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
-        x = torch.cat([state, action], 1)   # concatenate in transverse
+        x = torch.cat([state, action], dim=1)   # concatenate in transverse
         x = self.linear1(x)
         x = F.relu(x)
         x = self.linear2(x)

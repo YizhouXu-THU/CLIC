@@ -37,7 +37,7 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
 
 
 def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
-                    epochs=20, lr=1e-4, batch_size=64, wandb_logger=None, device='cuda') -> predictor:
+                    epochs=20, lr=1e-4, batch_size=128, wandb_logger=None, device='cuda') -> predictor:
     """
     Training process of supervised learning. 
     
@@ -74,8 +74,84 @@ def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray,
         total_loss /= batch_num
         print('    Epoch:', epoch+1, ' train loss: %.4f' % total_loss)
         
-        if wandb_logger is not None:
-            wandb_logger.log({'Predictor loss': total_loss})
+        # if wandb_logger is not None:
+        #     wandb_logger.log({'Predictor loss': total_loss})
+    
+    return model
+
+
+def train_valid_predictor(model: predictor, 
+                          X_train: np.ndarray, y_train: np.ndarray, 
+                          X_valid: np.ndarray, y_valid: np.ndarray, 
+                          epochs=20, lr=1e-4, batch_size=128, wandb_logger=None, device='cuda') -> predictor:
+    """
+    Training process of supervised learning. 
+    
+    Including validation process and of course will calculate hard labels. 
+    """
+    # loss_function = nn.CrossEntropyLoss()
+    loss_function = nn.BCELoss()
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+    train_size = y_train.size
+    valid_size = y_valid.size
+    batch_num = math.ceil(train_size/batch_size)
+
+    for epoch in range(epochs):
+        # train
+        model.train()
+        total_loss = 0.0
+        total_correct = 0
+        # shuffle
+        data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
+        np.random.shuffle(data_train)
+        
+        for iteration in range(batch_num):
+            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
+            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
+            X = torch.tensor(X, dtype=torch.float32, device=device)
+            y = torch.tensor(y, dtype=torch.float32, device=device)
+            
+            out = model(X)
+            loss = loss_function(out, y)
+            total_loss += loss.item()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            # y_pred = torch.max(out, dim=1)[1].data.cpu().numpy().squeeze()
+            y_pred = (out > 0.5).data.cpu().numpy().squeeze()
+            y = y.data.cpu().numpy().squeeze()
+            total_correct += sum(y_pred == y)
+        
+        total_loss /= batch_num
+        accuracy = total_correct / train_size
+        print('Epoch:', epoch+1, ' train loss: %.4f' % total_loss, ' train accuracy: %.4f' % accuracy, end='    ')
+        
+        # if wandb_logger is not None:
+        #     wandb_logger.log({
+        #         'Predictor train loss': total_loss, 
+        #         'Predictor train accuracy': accuracy, 
+        #         })
+        
+        # validate
+        with torch.no_grad():
+            model.eval()
+            out = model(torch.tensor(X_valid, dtype=torch.float32, device=device))
+            y_valid = torch.tensor(y_valid, dtype=torch.float32, device=device)
+            loss = loss_function(out, y_valid)
+        
+        # y_pred = torch.max(out, dim=1)[1].data.cpu().numpy().squeeze()
+        y_pred = (out > 0.5).data.cpu().numpy().squeeze()
+        y_valid = y_valid.data.cpu().numpy().squeeze()
+        accuracy = sum(y_pred == y_valid) / valid_size
+        print('test loss: %.4f' % loss.item(), ' test accuracy: %.4f' % accuracy)
+        
+        # if wandb_logger is not None:
+        #     wandb_logger.log({
+        #         'Predictor valid loss': loss.item(), 
+        #         'Predictor valid accuracy': accuracy, 
+        #         })
     
     return model
 
@@ -126,18 +202,18 @@ def train_av_online(av_model: SAC, env: Env, scenarios: np.ndarray,
                             'alpha': logger['alpha'], 
                             'alpha_loss': logger['alpha_loss'], 
                             'reward': reward, 
-                        })
+                            })
             
             if info == 'succeed':
                 success_count += 1
-            # print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.2f ' % scenario_reward, info)
+            # print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.3f ' % scenario_reward, info)
             if wandb_logger is not None:
                 wandb_logger.log({
-                    'episode_reward': scenario_reward, 
+                    'scenario_reward': scenario_reward, 
                     })
         
         success_rate = success_count / scenario_num
-        print('    Episode:', episode+1, ' Training success rate: %.2f' % success_rate)
+        print('    Episode:', episode+1, ' Training success rate: %.3f' % success_rate)
         if wandb_logger is not None:
             wandb_logger.log({
                 'success_count': success_count, 
@@ -175,14 +251,14 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
             
             if info == 'succeed':
                 success_count += 1
-            # print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.2f ' % scenario_reward, info)
-            if wandb_logger is not None:
-                wandb_logger.log({
-                    'episode_reward': scenario_reward, 
-                    })
+            # print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.3f ' % scenario_reward, info)
+            # if wandb_logger is not None:
+            #     wandb_logger.log({
+            #         'scenario_reward': scenario_reward, 
+            #         })
         
         success_rate = success_count / scenario_num
-        print('    Episode:', episode+1, ' Training success rate: %.2f' % success_rate)
+        print('    Episode:', episode+1, ' Training success rate: %.3f' % success_rate)
         if wandb_logger is not None:
             wandb_logger.log({
                 'success_count': success_count, 
@@ -209,6 +285,6 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
                         'policy_loss': logger['policy_loss'], 
                         'alpha': logger['alpha'], 
                         'alpha_loss': logger['alpha_loss'], 
-                    })
+                        })
     
     return av_model
