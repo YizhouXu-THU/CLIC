@@ -233,6 +233,7 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
         
         scenario_num = scenarios.shape[0]
         success_count = 0
+        total_reward = 0
         
         for i in range(scenario_num):
             state = env.reset(scenarios[i])
@@ -256,13 +257,16 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
             #     wandb_logger.log({
             #         'scenario_reward': scenario_reward, 
             #         })
+            total_reward += scenario_reward
         
         success_rate = success_count / scenario_num
-        print('    Episode:', episode+1, ' Training success rate: %.3f' % success_rate)
+        print('    Episode:', episode+1, ' Training success rate: %.3f' % success_rate, 
+              ' Total reward: %.3f' % total_reward)
         if wandb_logger is not None:
             wandb_logger.log({
                 'success_count': success_count, 
                 'success_rate': success_rate, 
+                'total_reward': total_reward, 
                 })
         
         # train

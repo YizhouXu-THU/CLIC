@@ -18,8 +18,8 @@ use_wandb = True
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='./scenario_lib_crash/', 
-                   npy_path='./crash_data.npy')
+lib = scenario_lib(path='./scenario_lib/', 
+                   npy_path='./all_data.npy')
 env = Env(max_bv_num=lib.max_bv_num, 
           cfg_sumo='./config/lane.sumocfg', 
           gui=sumo_gui)
