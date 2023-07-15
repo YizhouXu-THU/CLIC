@@ -1,9 +1,11 @@
-import math
+import os
+import sys
+sys.path.append(os.getcwd())
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 
 from utils.scenario_lib import scenario_lib
@@ -16,14 +18,15 @@ from utils.function import evaluate, train_valid_predictor
 # Prepare
 eval_size = 4096
 batch_size = 128
-epochs = 100
+train_size = 128
+epochs = 20
 learning_rate = 1e-4
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
 # lib = scenario_lib(path='./scenario_lib/', 
-#                    npy_path='')
+#                    npy_path='./all_data.npy')
 # pred = predictor(num_input=lib.max_dim, device=device)
 # pred.to(device)
 # criterion = nn.CrossEntropyLoss()
@@ -39,6 +42,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # np.save('./all_data.npy', all_data)
 # env.close()
 
+lib = scenario_lib(path='./scenario_lib/', 
+                   npy_path='./all_data.npy')
 all_data = np.load('./all_data.npy')
 X = all_data[:, :-1]
 y = all_data[:, -1].reshape(-1)
@@ -51,3 +56,6 @@ pred.to(device)
 
 pred = train_valid_predictor(pred, X_train, y_train, X_test, y_test, 
                              epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
+
+lib.labeling(pred)
+lib.visualize_label_distribution(train_size, save_path=None)

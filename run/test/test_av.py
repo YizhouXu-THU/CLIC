@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.append(os.getcwd())
+
 from datetime import datetime
 import wandb
 import torch
