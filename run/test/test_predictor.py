@@ -19,7 +19,7 @@ from utils.function import evaluate, train_valid_predictor
 eval_size = 4096
 batch_size = 128
 train_size = 128
-epochs = 200
+epochs = 20
 learning_rate = 1e-4
 sumo_gui = False
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')

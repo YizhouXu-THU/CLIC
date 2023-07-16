@@ -1,5 +1,6 @@
 import collections
 import random
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -7,7 +8,17 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
 
-from utils.environment import Env
+# hyperparameters
+BATCH_SIZE = 128
+LR_Q = 1e-4
+LR_VALUE = 1e-4
+LR_POLICY = 1e-4
+LR_ALPHA = 1e-4
+GAMMA = 0.99
+TAU = 0.01
+TARGET_ENTROPY = 0.0
+ALPHA_MULTIPLIER = 1.0
+MEMORY_CAPACITY = 100000
 
 
 class ReplayBuffer:
@@ -17,26 +28,31 @@ class ReplayBuffer:
     First in first out, which means automatically replace the oldest transition when the replay buffer is full. 
     """
 
-    def __init__(self, capacity: int, device='cuda') -> None:
+    def __init__(self, capacity=MEMORY_CAPACITY, device='cuda') -> None:
         self.memory = collections.deque(maxlen=capacity)
         self.device = device
 
-    def size(self) -> int:
-        return len(self.memory)
-    
     def store_transition(self, data: tuple[np.ndarray, np.ndarray, float, np.ndarray, float]) -> None:
         """data: (state, action, reward, next_state, not_done)"""
         self.memory.append(data)
+    
+    def size(self) -> int:
+        return len(self.memory)
 
-    def sample(self, batch_size=128) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def sample(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """sample a batch of experience to train"""
+
+        # initialize temporary container
         state_list = []
         action_list = []
         reward_list = []
         next_state_list = []
         not_done_list = []
 
-        batch = random.sample(self.memory, min(batch_size, self.size()))
+        batch_size = min(BATCH_SIZE, self.size())
+        batch = random.sample(self.memory, batch_size)
+        
+        # put the experience into the corresponding container according to type
         for experience in batch:
             state, action, reward, next_state, not_done = experience
             state_list.append(state)
@@ -50,9 +66,6 @@ class ReplayBuffer:
                torch.FloatTensor(np.array(reward_list)).unsqueeze(-1).to(self.device), \
                torch.FloatTensor(np.array(next_state_list)).to(self.device), \
                torch.FloatTensor(np.array(not_done_list)).unsqueeze(-1).to(self.device)
-    
-    def clear(self) -> None:
-        self.memory.clear()
 
 
 class ScalarNet(nn.Module):
@@ -102,7 +115,7 @@ class SoftQNet(nn.Module):
         self.linear3.bias.data.uniform_(-edge, edge)
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
-        x = torch.cat([state, action], dim=1)   # concatenate in transverse
+        x = torch.cat([state, action], 1)   # concatenate in transverse
         x = self.linear1(x)
         x = F.relu(x)
         x = self.linear2(x)
@@ -147,17 +160,14 @@ class PolicyNet(nn.Module):
         
         return mean, log_std
     
-    def choose_action(self, state: np.ndarray, deterministic=False) -> torch.Tensor:
+    def choose_action(self, state: np.ndarray) -> torch.Tensor:
         """Sample action based on state. """
         state = torch.FloatTensor(state).to(self.device)
         mean, log_std = self.forward(state)
         std = log_std.exp()
-        if deterministic:   # choose mean as action
-            action = mean
-        else:               # sampling from Gaussian distribution
-            normal = Normal(mean, std)
-            action = normal.sample()
-        action = torch.tanh(action).detach()    # shape: [action_dim]
+        normal = Normal(mean, std)  # construct normal distribution for action sampling
+        action = normal.sample()    # sample action in the generated normal distribution; shape: [action_dim]
+        action = torch.tanh(action).detach()
 
         action_split = torch.chunk(action, chunks=2, dim=0)     # split the action into speed and yaw
         # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
@@ -167,9 +177,9 @@ class PolicyNet(nn.Module):
                      (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
         action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
                      (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
-        action = torch.cat((action_abs, action_arg))
+        action = torch.cat((action_abs, action_arg))    # shape: [action_dim]
 
-        return action   # shape: [action_dim]
+        return action
 
     def evaluate(self, state: torch.Tensor, epsilon=1e-6) -> tuple[torch.Tensor, torch.Tensor]:
         """Reparameterize to calculate entropy. """
@@ -183,7 +193,7 @@ class PolicyNet(nn.Module):
         action = torch.tanh(mean + std*z)   # shape: [batch_size, action_dim]
         # calculate the entropy of the action
         log_prob = normal.log_prob(mean + std*z) - torch.log(1 - action.pow(2) + epsilon)
-        log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
+        log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation; shape: [batch_size, 1]
         
         action_split = torch.chunk(action, chunks=2, dim=1)     # split the action into speed and yaw
         # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
@@ -193,23 +203,17 @@ class PolicyNet(nn.Module):
                      (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
         action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
                      (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
-        action = torch.cat((action_abs, action_arg), dim=1)
+        action = torch.cat((action_abs, action_arg), dim=1)     # shape: [batch_size, action_dim]
 
-        return action, log_prob # shape: [batch_size, action_dim], [batch_size, 1]
+        return action, log_prob
 
 
-class RL_brain:
-    def __init__(self, env: Env, capacity: int, device='cuda', 
-                 batch_size=128, lr=1e-4, gamma=0.99, tau=0.01, target_entropy=0.0, alpha_multiplier=1.0) -> None:
+class SAC:
+    def __init__(self, env, device='cuda') -> None:
         self.state_dim = env.state_dim
         self.action_dim = env.action_dim
         self.action_range = env.action_range
         self.device = device
-        self.batch_size = batch_size
-        self.gamma = gamma
-        self.tau = tau
-        self.target_entropy = target_entropy
-        self.alpha_multiplier = alpha_multiplier
 
         # initialize networks
         self.value_net = ValueNet(state_dim=self.state_dim).to(device)
@@ -222,29 +226,29 @@ class RL_brain:
         
         # initialize target network (with the same form as the soft update process)
         for target_param, param in zip(self.target_value_net.parameters(), self.value_net.parameters()):
-            target_param.data.copy_(self.tau * param + (1-self.tau) * target_param)
+            target_param.data.copy_(TAU * param + (1-TAU) * target_param)
 
         # initialize optimizers
-        self.value_optimizer = optim.Adam(self.value_net.parameters(), lr=lr)
-        self.q1_optimizer = optim.Adam(self.q1_net.parameters(), lr=lr)
-        self.q2_optimizer = optim.Adam(self.q2_net.parameters(), lr=lr)
-        self.policy_optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
-        self.alpha_optimizer = optim.Adam(self.log_alpha.parameters(), lr=lr)
+        self.value_optimizer = optim.Adam(self.value_net.parameters(), lr=LR_VALUE)
+        self.q1_optimizer = optim.Adam(self.q1_net.parameters(), lr=LR_Q)
+        self.q2_optimizer = optim.Adam(self.q2_net.parameters(), lr=LR_Q)
+        self.policy_optimizer = optim.Adam(self.policy_net.parameters(), lr=LR_POLICY)
+        self.alpha_optimizer = optim.Adam(self.log_alpha.parameters(), lr=LR_ALPHA)
 
         # initialize replay buffer
-        self.replay_buffer = ReplayBuffer(capacity=capacity, device=device)
+        self.replay_buffer = ReplayBuffer(device=device)
 
-    def choose_action(self, state: torch.Tensor, deterministic=False) -> np.ndarray:
-        action = self.policy_net.choose_action(state, deterministic=deterministic)
+    def choose_action(self, state: torch.Tensor) -> np.ndarray:
+        action = self.policy_net.choose_action(state)
         return action.cpu().numpy()
 
     def train(self) -> dict[str, float]:
-        state, action, reward, next_state, not_done = self.replay_buffer.sample(batch_size=self.batch_size)
+        state, action, reward, next_state, not_done = self.replay_buffer.sample()
         new_action, log_prob = self.policy_net.evaluate(state)
 
         # alpha loss function
-        alpha_loss = -(self.log_alpha() * (log_prob + self.target_entropy).detach()).mean()
-        alpha = self.log_alpha().exp() * self.alpha_multiplier
+        alpha_loss = -(self.log_alpha() * (log_prob + TARGET_ENTROPY).detach()).mean()
+        alpha = self.log_alpha().exp() * ALPHA_MULTIPLIER
 
         # V value loss function
         value = self.value_net(state)
@@ -257,7 +261,7 @@ class RL_brain:
         q1_value = self.q1_net(state, action)
         q2_value = self.q2_net(state, action)
         target_value = self.target_value_net(next_state)
-        target_q_value = reward + not_done * self.gamma * target_value
+        target_q_value = reward + not_done * GAMMA * target_value
         q1_value_loss = F.mse_loss(q1_value, target_q_value.detach())
         q2_value_loss = F.mse_loss(q2_value, target_q_value.detach())
 
@@ -286,7 +290,7 @@ class RL_brain:
         
         # soft update of target network
         for target_param, param in zip(self.target_value_net.parameters(), self.value_net.parameters()):
-            target_param.data.copy_(self.tau * param + (1-self.tau) * target_param)
+            target_param.data.copy_(TAU * param + (1-TAU) * target_param)
 
         # record the values during the training process
         return dict(
