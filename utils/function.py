@@ -242,7 +242,7 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
             
             while not done:
                 step += 1
-                action = av_model.choose_action(state, deterministic=False)
+                action = av_model.choose_action(state, deterministic=True)
                 next_state, reward, done, info = env.step(action, timestep=step)
                 not_done = 0.0 if done else 1.0
                 av_model.replay_buffer.store_transition((state, action, reward, next_state, not_done))
@@ -259,13 +259,14 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
             total_reward += scenario_reward
         
         success_rate = success_count / scenario_num
+        average_reward = total_reward / scenario_num
         print('    Episode:', episode+1, ' Training success rate: %.3f' % success_rate, 
-              ' Total reward: %.3f' % total_reward)
+              ' Average reward: %.3f' % average_reward)
         if wandb_logger is not None:
             wandb_logger.log({
                 'success_count': success_count, 
                 'success_rate': success_rate, 
-                'total_reward': total_reward, 
+                'average_reward': average_reward, 
                 })
         
         # train
