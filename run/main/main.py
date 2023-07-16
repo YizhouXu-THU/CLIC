@@ -29,20 +29,27 @@ use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/scenario_lib_test/', 
-                   npy_path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/all_data.npy')
+lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
 pred = predictor(num_input=lib.max_dim, device=device)
 pred.to(device)
-env = Env(max_bv_num=lib.max_bv_num, 
-          cfg_sumo='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/config/lane.sumocfg', 
-          gui=sumo_gui)
+env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
                     batch_size=batch_size, lr=learning_rate)
 
 if use_wandb:
+    wandb_config = {
+        'eval_size': eval_size, 
+        'batch_size': batch_size, 
+        'train_size': train_size,
+        'rounds': rounds, 
+        'epochs': epochs, 
+        'episodes': episodes, 
+        'learning_rate': learning_rate, 
+    }
     wandb_logger = wandb.init(
         project='CL for Autonomous Vehicle Training and Testing', 
         name=datetime.now().strftime('%Y%m%d-%H%M')+'-CL',  # for example: '20230509-1544-CL'
+        config=wandb_config, 
         reinit=True, 
         )
 else:
