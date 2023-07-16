@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-from utils.av_policy_sac import SAC
 from utils.av_policy import RL_brain
 from utils.environment import Env
 from utils.predictor import predictor
@@ -156,8 +155,8 @@ def train_valid_predictor(model: predictor,
     return model
 
 
-def train_av_online(av_model: SAC, env: Env, scenarios: np.ndarray, 
-                    episodes=100, wandb_logger=None) -> SAC:
+def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray, 
+                    episodes=100, wandb_logger=None) -> RL_brain:
     """Training process of online reinforcement learning. """
     total_step = 0
     for episode in range(episodes):
