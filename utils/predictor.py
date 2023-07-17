@@ -7,6 +7,7 @@ from torch.nn import functional as F
 class predictor(nn.Module):
     def __init__(self, num_input: int, num_hidden=256, num_output=2, device='cuda', dropout=False) -> None:
         super().__init__()
+        self.num_output = num_output
         self.device = device
         self.fc1 = nn.Linear(num_input, num_hidden)
         self.fc2 = nn.Linear(num_hidden, num_hidden)
@@ -31,6 +32,8 @@ class predictor(nn.Module):
         output = self.fc3(x)
         
         # output = 2 * torch.tanh(x)  # soft clip
-        output = F.softmax(output, dim=1)[:,1]
-        # output = F.softmax(output, dim=1)
+        if self.num_output == 1:
+            output = torch.sigmoid(output).squeeze()
+        elif self.num_output == 2:
+            output = F.softmax(output, dim=1)[:,-1]
         return output   # probability of predicting positive samples; shape: [batch_size, 1]
