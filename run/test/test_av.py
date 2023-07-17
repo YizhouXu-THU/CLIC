@@ -18,7 +18,7 @@ train_size = 128
 epochs = 20
 episodes = 20
 learning_rate = 1e-4
-use_wandb = False
+use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 

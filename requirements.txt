@@ -1,0 +1,7 @@
+matplotlib==3.5.2
+numpy==1.23.3
+scikit_learn==1.0.2
+sumolib==1.14.1
+torch==1.12.1
+traci==1.14.1
+wandb==0.15.4

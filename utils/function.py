@@ -1,4 +1,5 @@
 import math
+from tqdm import trange
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,7 +17,7 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
     labels = np.zeros(scenario_num)
     
     with torch.no_grad():
-        for i in range(scenario_num):
+        for i in trange(scenario_num):
             state = env.reset(scenarios[i])
             done = False
             step = 0
