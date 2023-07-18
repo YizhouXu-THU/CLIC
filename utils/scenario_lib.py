@@ -103,13 +103,15 @@ class scenario_lib:
         p = self.labels / np.sum(self.labels)
         return np.random.choice(self.scenario_num, size=size, replace=False, p=p)
     
-    def visualize_label_distribution(self, train_size: int, save_path='./figure/') -> None:
+    def visualize_label_distribution(self, num_select: int, 
+                                     save_path='./figure/', filename='label_distribution.png') -> None:
         """Visualize the distribution of labels using histogram. """
-        plt.hist(self.labels, bins=200, density=True, histtype='barstacked', label='all label', alpha=0.8)
-        select_labels = self.labels[self.select(size=train_size)]
+        plt.hist(self.labels, bins=100, density=True, label='all label', alpha=0.8)
+        select_labels = self.labels[self.select(size=num_select)]
         plt.hist(select_labels, bins=20, density=True, label='selected label', alpha=0.5)
-        plt.legend()
+        plt.legend(loc='upper center')
+        plt.title('Label Distribution')
         if save_path is not None:
-            plt.savefig(save_path+'label_distribution.png')
+            plt.savefig(save_path + filename)
         else:
             plt.show()

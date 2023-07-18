@@ -57,5 +57,5 @@ pred.to(device)
 pred = train_valid_predictor(pred, X_train, y_train, X_test, y_test, 
                              epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
 
-# lib.labeling(pred)
-# lib.visualize_label_distribution(train_size, save_path=None)
+lib.labeling(pred)
+lib.visualize_label_distribution(num_select=train_size)
