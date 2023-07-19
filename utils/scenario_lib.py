@@ -14,7 +14,7 @@ class scenario_lib:
         self.npy_path = npy_path
         self.max_bv_num = 0                         # initialize with 0
         self.max_timestep = 0                       # initialize with 0
-        self.type_count = []                        # count separately based on the number of bv
+        self.type_count = {}                        # count separately based on the number of bv
         self.data = self.load_data()
         self.scenario_num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
@@ -27,22 +27,24 @@ class scenario_lib:
             data = data[:, :-1]     # the last column is the predicted label and is not needed here
             self.max_timestep = int(np.max(data[:, ::6]))
             for subpath in os.listdir(self.path):
-                self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
+                bv_num = int(subpath[-1])
+                self.max_bv_num = max(self.max_bv_num, bv_num)
                 n = 0
                 for filename in os.listdir(self.path+subpath):
                     n += 1
-                self.type_count.append(n)
+                self.type_count[bv_num] = n
         else:   # load from original .csv files
             data = []
             for subpath in os.listdir(self.path):
-                self.max_bv_num = max(self.max_bv_num, int(subpath[-1]))
+                bv_num = int(subpath[-1])
+                self.max_bv_num = max(self.max_bv_num, bv_num)
                 n = 0
                 for filename in os.listdir(self.path+subpath):
                     scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
                     self.max_timestep = max(self.max_timestep, int(scenario[-1, 0]))
                     data.append(scenario)
                     n += 1
-                self.type_count.append(n)
+                self.type_count[bv_num] = n
             data = self.fill_zero(data)
         self.max_timestep += 1  # starting from 0
         return data
@@ -101,13 +103,15 @@ class scenario_lib:
         p = self.labels / np.sum(self.labels)
         return np.random.choice(self.scenario_num, size=size, replace=False, p=p)
     
-    def visualize_label_distribution(self, train_size: int, save_path='./figure/') -> None:
+    def visualize_label_distribution(self, num_select: int, 
+                                     save_path='./figure/', filename='label_distribution.png') -> None:
         """Visualize the distribution of labels using histogram. """
-        plt.hist(self.labels, bins=200, density=True, histtype='barstacked', label='all label', alpha=0.8)
-        select_labels = self.labels[self.select(size=train_size)]
+        plt.hist(self.labels, bins=100, density=True, label='all label', alpha=0.8)
+        select_labels = self.labels[self.select(size=num_select)]
         plt.hist(select_labels, bins=20, density=True, label='selected label', alpha=0.5)
-        plt.legend()
+        plt.legend(loc='upper center')
+        plt.title('Label Distribution')
         if save_path is not None:
-            plt.savefig(save_path+'label_distribution.png')
+            plt.savefig(save_path + filename)
         else:
             plt.show()

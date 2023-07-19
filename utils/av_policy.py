@@ -218,7 +218,7 @@ class RL_brain:
         self.q2_net = SoftQNet(input_dim=self.state_dim+self.action_dim).to(device)
         self.policy_net = PolicyNet(state_dim=self.state_dim, action_dim=self.action_dim, 
                                     action_range=self.action_range, device=device).to(device)
-        self.log_alpha = ScalarNet(init_value=0).to(device)
+        self.log_alpha = ScalarNet(init_value=np.log(0.2)).to(device)
         
         # initialize target network (with the same form as the soft update process)
         for target_param, param in zip(self.target_value_net.parameters(), self.value_net.parameters()):

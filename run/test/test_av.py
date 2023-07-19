@@ -20,20 +20,26 @@ episodes = 20
 learning_rate = 1e-4
 use_wandb = True
 sumo_gui = False
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='./scenario_lib/', 
-                   npy_path='./all_data.npy')
-env = Env(max_bv_num=lib.max_bv_num, 
-          cfg_sumo='./config/lane.sumocfg', 
-          gui=sumo_gui)
+lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
+env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
                     batch_size=batch_size, lr=learning_rate)
 
 if use_wandb:
+    wandb_config = {
+        'eval_size': eval_size, 
+        'batch_size': batch_size, 
+        'train_size': train_size, 
+        'epochs': epochs, 
+        'episodes': episodes, 
+        'learning_rate': learning_rate, 
+    }
     wandb_logger = wandb.init(
         project='CL for Autonomous Vehicle Training and Testing', 
         name=datetime.now().strftime('%Y%m%d-%H%M')+'-test_av', # for example: '20230509-1544-test_av'
+        config=wandb_config, 
         reinit=True, 
         )
 else:

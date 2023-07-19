@@ -11,7 +11,7 @@ import torch
 from utils.scenario_lib import scenario_lib
 from utils.environment import Env
 from utils.av_policy import RL_brain
-from utils.function import evaluate, train_av
+from utils.function import evaluate, train_av, train_av_online
 
 
 # Prepare
@@ -20,26 +20,33 @@ t0 = time.time()
 eval_size = 4096
 batch_size = 128
 train_size = 128
-rounds = 10
+rounds = 20
 epochs = 20
-episodes = 20
+episodes = 50
 learning_rate = 1e-4
 use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/scenario_lib/', 
-                   npy_path='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/all_data.npy')
-env = Env(max_bv_num=lib.max_bv_num, 
-          cfg_sumo='/home/xuyizhou/CL-for-Autonomous-Vehicle-Training-and-Testing/config/lane.sumocfg', 
-          gui=sumo_gui)
+lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
+env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
                     batch_size=batch_size, lr=learning_rate)
 
 if use_wandb:
+    wandb_config = {
+        'eval_size': eval_size, 
+        'batch_size': batch_size, 
+        'train_size': train_size,
+        'rounds': rounds, 
+        'epochs': epochs, 
+        'episodes': episodes, 
+        'learning_rate': learning_rate, 
+    }
     wandb_logger = wandb.init(
         project='CL for Autonomous Vehicle Training and Testing', 
         name=datetime.now().strftime('%Y%m%d-%H%M')+'-simple',  # for example: '20230509-1544-simple'
+        config=wandb_config, 
         reinit=True, 
         )
 else:
@@ -86,6 +93,8 @@ for round in range(rounds):
     # Train AV model
     av_model = train_av(av_model, env, scenarios=train_scenario, 
                         epochs=epochs, episodes=episodes, wandb_logger=wandb_logger)
+    # av_model = train_av_online(av_model, env, scenarios=train_scenario, 
+    #                            episodes=episodes, wandb_logger=wandb_logger)
     t8 = time.time()
     print('    Training AV model time: %.1fs' % (t8-t7))
     
