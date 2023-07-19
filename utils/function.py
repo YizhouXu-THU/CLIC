@@ -15,6 +15,7 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
     """Return the performance of the AV model in the given scenarios (accident: 1, otherwise: 0). """
     scenario_num = scenarios.shape[0]
     labels = np.zeros(scenario_num)
+    print('    evaluating...')
     
     with torch.no_grad():
         for i in trange(scenario_num):

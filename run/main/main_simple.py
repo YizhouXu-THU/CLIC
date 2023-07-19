@@ -11,7 +11,7 @@ import torch
 from utils.scenario_lib import scenario_lib
 from utils.environment import Env
 from utils.av_policy import RL_brain
-from utils.function import evaluate, train_av
+from utils.function import evaluate, train_av, train_av_online
 
 
 # Prepare
@@ -93,6 +93,8 @@ for round in range(rounds):
     # Train AV model
     av_model = train_av(av_model, env, scenarios=train_scenario, 
                         epochs=epochs, episodes=episodes, wandb_logger=wandb_logger)
+    # av_model = train_av_online(av_model, env, scenarios=train_scenario, 
+    #                            episodes=episodes, wandb_logger=wandb_logger)
     t8 = time.time()
     print('    Training AV model time: %.1fs' % (t8-t7))
     
