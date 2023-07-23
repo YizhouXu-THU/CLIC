@@ -26,7 +26,7 @@ sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 # print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
-# lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
+# lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 # pred = predictor(num_input=lib.max_dim, device=device)
 # pred.to(device)
 # criterion = nn.CrossEntropyLoss()
@@ -39,11 +39,11 @@ device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 # print('Success rate: %.3f' % success_rate)
 
 # all_data = np.append(lib.data, all_label.reshape(-1,1), axis=1)
-# np.save('./all_data.npy', all_data)
+# np.save('./data/all.npy', all_data)
 # env.close()
 
-lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
-all_data = np.load('./all_data.npy')
+lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+all_data = np.load('./data/all.npy')
 X = all_data[:, :-1]
 y = all_data[:, -1].reshape(-1)
 total_num, max_dim = X.shape

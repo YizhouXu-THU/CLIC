@@ -23,13 +23,13 @@ batch_size = 128
 train_size = 128
 rounds = 20
 epochs = 20
-episodes = 50
+episodes = 20
 learning_rate = 1e-4
 use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
+lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 pred = predictor(num_input=lib.max_dim, device=device)
 pred.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)

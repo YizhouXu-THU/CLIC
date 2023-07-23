@@ -1,15 +1,9 @@
-/scenario_lib/
-/scenario_lib_crash/
-/scenario_lib_test/
+/data/
 /log/
 /figure/
-/__pycache__/
 /.vscode/
 /utils/__pycache__/
 /run/lib_generation.py
 /references/
 /wandb/
-/all_data.npy
-/crash_data.npy
-/scenario_lib_crash.zip
-nohup.out
+/nohup.out

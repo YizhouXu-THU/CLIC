@@ -18,7 +18,8 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
     print('    evaluating...')
     
     with torch.no_grad():
-        for i in trange(scenario_num):
+        # for i in trange(scenario_num):
+        for i in range(scenario_num):
             state = env.reset(scenarios[i])
             done = False
             step = 0
