@@ -28,7 +28,7 @@ use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
+lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
                     batch_size=batch_size, lr=learning_rate)

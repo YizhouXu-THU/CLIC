@@ -15,8 +15,8 @@ from utils.function import evaluate
 sumo_gui = False
 device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
-all_lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
-crash_lib = scenario_lib(path='./scenario_lib_crash/', npy_path='./crash_data.npy')
+all_lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+crash_lib = scenario_lib(path='./data/crash/', npy_path='./data/crash.npy')
 env = Env(max_bv_num=all_lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=0, device=device)
 

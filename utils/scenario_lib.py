@@ -9,7 +9,7 @@ from utils.predictor import predictor
 
 
 class scenario_lib:
-    def __init__(self, path='./scenario_lib/', npy_path='./all_data.npy') -> None:
+    def __init__(self, path='./data/all/', npy_path='./data/all.npy') -> None:
         self.path = path
         self.npy_path = npy_path
         self.max_bv_num = 0                         # initialize with 0

@@ -29,7 +29,7 @@ use_wandb = True
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
-lib = scenario_lib(path='./scenario_lib/', npy_path='./all_data.npy')
+lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 pred = predictor(num_input=lib.max_dim, device=device)
 pred.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
