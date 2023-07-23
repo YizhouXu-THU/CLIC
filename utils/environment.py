@@ -46,8 +46,8 @@ class Env:
         self.state_dim = (1 + max_bv_num) * 4   # x_pos, y_pos, speed, yaw of each vehicle
         self.action_dim = 2                     # delta_speed, delta_yaw
         self.delta_t = traci.simulation.getDeltaT()
-        self.av_accel = -7.84
-        self.av_decel = 5.88
+        self.av_accel = 5.88
+        self.av_decel = -7.84
         self.action_range = np.array(((self.av_decel, self.av_accel), (-np.pi/6, np.pi/6))) * self.delta_t
         self.current_episode = 0
     
