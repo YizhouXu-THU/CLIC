@@ -114,13 +114,14 @@ class SoftQNet(nn.Module):
 class PolicyNet(nn.Module):
     """Actor"""
 
-    def __init__(self, state_dim: int, action_dim: int, action_range: np.ndarray, 
+    # def __init__(self, state_dim: int, action_dim: int, action_range: np.ndarray, 
+    def __init__(self, state_dim: int, action_dim: int, 
                  log_std_min=-20, log_std_max=2, edge=3e-3, device='cuda') -> None:
         super(PolicyNet, self).__init__()
         self.device = device
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
-        self.action_range = action_range
+        # self.action_range = action_range
 
         self.linear1 = nn.Linear(state_dim, 256)
         self.linear2 = nn.Linear(256, 256)
@@ -157,17 +158,17 @@ class PolicyNet(nn.Module):
         else:               # sampling from Gaussian distribution
             normal = Normal(mean, std)
             action = normal.sample()
-        action = torch.tanh(action).detach()    # shape: [action_dim]
+        action = torch.tanh(action).detach()    # shape: [action_dim], range: [-1, 1]
 
-        action_split = torch.chunk(action, chunks=2, dim=0)     # split the action into speed and yaw
-        # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
-        # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
-        # extend the action to the actual range
-        action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
-                     (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
-        action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
-                     (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
-        action = torch.cat((action_abs, action_arg))
+        # action_split = torch.chunk(action, chunks=2, dim=0)     # split the action into speed and yaw
+        # # extend the action to the actual range
+        # # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
+        # # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        # action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
+        #              (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
+        # action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
+        #              (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
+        # action = torch.cat((action_abs, action_arg))
 
         return action   # shape: [action_dim]
 
@@ -180,20 +181,20 @@ class PolicyNet(nn.Module):
         z = noise.sample()  # sample noise in standard normal distribution
         z = z.to(self.device)
         
-        action = torch.tanh(mean + std*z)   # shape: [batch_size, action_dim]
+        action = torch.tanh(mean + std*z)   # shape: [batch_size, action_dim], range: [-1, 1]
         # calculate the entropy of the action
         log_prob = normal.log_prob(mean + std*z) - torch.log(1 - action.pow(2) + epsilon)
         log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
         
-        action_split = torch.chunk(action, chunks=2, dim=1)     # split the action into speed and yaw
-        # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
-        # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
-        # extend the action to the actual range
-        action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
-                     (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
-        action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
-                     (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
-        action = torch.cat((action_abs, action_arg), dim=1)
+        # action_split = torch.chunk(action, chunks=2, dim=1)     # split the action into speed and yaw
+        # # extend the action to the actual range
+        # # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
+        # # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        # action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
+        #              (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
+        # action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
+        #              (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
+        # action = torch.cat((action_abs, action_arg), dim=1)
 
         return action, log_prob # shape: [batch_size, action_dim], [batch_size, 1]
 
@@ -203,7 +204,7 @@ class RL_brain:
                  batch_size=128, lr=1e-4, gamma=0.99, tau=0.01, target_entropy=0.0, alpha_multiplier=1.0) -> None:
         self.state_dim = env.state_dim
         self.action_dim = env.action_dim
-        self.action_range = env.action_range
+        # self.action_range = env.action_range
         self.device = device
         self.batch_size = batch_size
         self.gamma = gamma
@@ -217,7 +218,8 @@ class RL_brain:
         self.q1_net = SoftQNet(input_dim=self.state_dim+self.action_dim).to(device)
         self.q2_net = SoftQNet(input_dim=self.state_dim+self.action_dim).to(device)
         self.policy_net = PolicyNet(state_dim=self.state_dim, action_dim=self.action_dim, 
-                                    action_range=self.action_range, device=device).to(device)
+                                    device=device).to(device)
+        #                             action_range=self.action_range, device=device).to(device)
         self.log_alpha = ScalarNet(init_value=np.log(0.2)).to(device)
         
         # initialize target network (with the same form as the soft update process)
