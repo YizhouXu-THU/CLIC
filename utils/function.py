@@ -38,6 +38,32 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
     return labels
 
 
+def evaluate_random(env: Env, scenarios: np.ndarray) -> np.ndarray:
+    """Return the performance of the random policy in the given scenarios (accident: 1, otherwise: 0). """
+    scenario_num = scenarios.shape[0]
+    labels = np.zeros(scenario_num)
+    print('    evaluating...')
+    
+    # for i in trange(scenario_num):
+    for i in range(scenario_num):
+        state = env.reset(scenarios[i])
+        done = False
+        step = 0
+        
+        while not done:
+            step += 1
+            action = np.random.uniform(-1, 1, size=(2,))
+            next_state, reward, done, info = env.step(action, timestep=step)
+            state = next_state
+        
+        if info == 'fail':
+            labels[i] = 1
+        elif info == 'succeed':
+            labels[i] = 0
+    
+    return labels
+
+
 def train_predictor(model: predictor, X_train: np.ndarray, y_train: np.ndarray, 
                     epochs=20, lr=1e-4, batch_size=128, wandb_logger=None, device='cuda') -> predictor:
     """
@@ -159,7 +185,7 @@ def train_valid_predictor(model: predictor,
 
 
 def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray, 
-                    episodes=100, wandb_logger=None) -> RL_brain:
+                    episodes=100, auto_alpha=True, wandb_logger=None) -> RL_brain:
     """Training process of online reinforcement learning. """
     total_step = 0
     for episode in range(episodes):
@@ -185,7 +211,7 @@ def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray,
                 scenario_reward += reward
 
                 if total_step > 200:
-                    logger = av_model.train()
+                    logger = av_model.train(auto_alpha)
                     if wandb_logger is not None:
                         wandb_logger.log({
                             'log_prob': logger['log_prob'], 
@@ -226,7 +252,7 @@ def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray,
 
 
 def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray, 
-             epochs=20, episodes=20, wandb_logger=None) -> RL_brain:
+             epochs=20, episodes=20, auto_alpha=True, wandb_logger=None) -> RL_brain:
     """Training process of offline reinforcement learning. """
     for episode in range(episodes):
         # rollout & evaluate
@@ -274,7 +300,7 @@ def train_av(av_model: RL_brain, env: Env, scenarios: np.ndarray,
         
         # train
         for epoch in range(epochs):
-            logger = av_model.train()
+            logger = av_model.train(auto_alpha)
             if wandb_logger is not None:
                     wandb_logger.log({
                         'log_prob': logger['log_prob'], 
