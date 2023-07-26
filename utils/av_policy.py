@@ -245,7 +245,10 @@ class RL_brain:
         new_action, log_prob = self.policy_net.evaluate(state)
 
         # alpha loss function
-        alpha_loss = -(self.log_alpha() * (log_prob + self.target_entropy).detach()).mean()
+        if auto_alpha:
+            alpha_loss = -(self.log_alpha() * (log_prob + self.target_entropy).detach()).mean()
+        else:
+            alpha_loss = torch.tensor(0.0, device=self.device)
         alpha = self.log_alpha().exp() * self.alpha_multiplier
 
         # V value loss function
@@ -272,20 +275,21 @@ class RL_brain:
         self.q1_optimizer.zero_grad()
         self.q2_optimizer.zero_grad()
         self.policy_optimizer.zero_grad()
+        if auto_alpha:
+            self.alpha_optimizer.zero_grad()
 
         value_loss.backward()
         q1_value_loss.backward()
         q2_value_loss.backward()
         policy_loss.backward()
+        if auto_alpha:
+            alpha_loss.backward()
 
         self.value_optimizer.step()
         self.q1_optimizer.step()
         self.q2_optimizer.step()
         self.policy_optimizer.step()
-        
         if auto_alpha:
-            self.alpha_optimizer.zero_grad()
-            alpha_loss.backward()
             self.alpha_optimizer.step()
         
         # soft update of target network
