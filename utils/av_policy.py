@@ -269,19 +269,18 @@ class RL_brain:
 
         # update parameters
         self.value_optimizer.zero_grad()
-        value_loss.backward()
-        self.value_optimizer.step()
-        
         self.q1_optimizer.zero_grad()
-        q1_value_loss.backward()
-        self.q1_optimizer.step()
-        
         self.q2_optimizer.zero_grad()
-        q2_value_loss.backward()
-        self.q2_optimizer.step()
-        
         self.policy_optimizer.zero_grad()
+
+        value_loss.backward()
+        q1_value_loss.backward()
+        q2_value_loss.backward()
         policy_loss.backward()
+
+        self.value_optimizer.step()
+        self.q1_optimizer.step()
+        self.q2_optimizer.step()
         self.policy_optimizer.step()
         
         if auto_alpha:

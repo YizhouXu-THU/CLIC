@@ -108,7 +108,7 @@ for round in range(rounds):
     print('    Selecting time: %.1fs' % (t7-t6))
 
     # 6. Train AV model
-    # av_model = train_av(av_model, env, train_scenario, epochs, episodes, wandb_logger)
+    # av_model = train_av(av_model, env, train_scenario, epochs, episodes, auto_alpha, wandb_logger)
     av_model = train_av_online(av_model, env, train_scenario, episodes, auto_alpha, wandb_logger)
     t8 = time.time()
     print('    Training AV model time: %.1fs' % (t8-t7))

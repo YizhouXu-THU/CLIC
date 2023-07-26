@@ -29,11 +29,11 @@ crash_label_random = evaluate_random(env, scenarios=crash_lib.data)
 all_success_rate_rl = 1 - np.sum(all_label_rl) / all_label_rl.size
 crash_success_rate_rl = 1 - np.sum(crash_label_rl) / crash_label_rl.size
 print('Using untrained RL:')
-print('All scenario success rate: %.3f' % all_success_rate_rl, 
-      'Crash scenario success rate: %.3f' % crash_success_rate_rl)
+print('All scenario success rate: %.3f;' % all_success_rate_rl, 
+      'Crash scenario success rate: %.3f.' % crash_success_rate_rl)
 
 all_success_rate_random = 1 - np.sum(all_label_random) / all_label_random.size
 crash_success_rate_random = 1 - np.sum(crash_label_random) / crash_label_random.size
 print('Using random policy:')
-print('All scenario success rate: %.3f' % all_success_rate_random, 
-      'Crash scenario success rate: %.3f' % crash_success_rate_random)
+print('All scenario success rate: %.3f;' % all_success_rate_random, 
+      'Crash scenario success rate: %.3f.' % crash_success_rate_random)

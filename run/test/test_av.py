@@ -16,10 +16,10 @@ eval_size = 4096
 batch_size = 128
 train_size = 128
 epochs = 20
-episodes = 20
+episodes = 10
 learning_rate = 1e-4
 auto_alpha = False
-use_wandb = True
+use_wandb = False
 sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
@@ -50,7 +50,7 @@ else:
 index = lib.sample(size=train_size)
 train_scenario = lib.data[index]
 
-# av_model = train_av_online(av_model, env, train_scenario, episodes, wandb_logger)
-av_model = train_av(av_model, env, train_scenario, epochs, episodes, wandb_logger)
+av_model = train_av_online(av_model, env, train_scenario, episodes, auto_alpha, wandb_logger)
+# av_model = train_av(av_model, env, train_scenario, epochs, episodes, auto_alpha, wandb_logger)
 
 env.close()
