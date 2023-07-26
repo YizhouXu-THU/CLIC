@@ -26,22 +26,6 @@ sumo_gui = False
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 # print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
-# lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
-# pred = predictor(num_input=lib.max_dim, device=device)
-# pred.to(device)
-# criterion = nn.CrossEntropyLoss()
-# optimizer = optim.Adam(pred.parameters(), lr=learning_rate)
-# env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
-# av_model = RL_brain(env, capacity=0, device=device)
-
-# all_label = evaluate(av_model, env, scenarios=lib.data)
-# success_rate = 1 - np.sum(all_label) / all_label.size
-# print('Success rate: %.3f' % success_rate)
-
-# all_data = np.append(lib.data, all_label.reshape(-1,1), axis=1)
-# np.save('./data/all.npy', all_data)
-# env.close()
-
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 all_data = np.load('./data/all.npy')
 X = all_data[:, :-1]

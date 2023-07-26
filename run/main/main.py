@@ -36,6 +36,8 @@ pred.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
                     batch_size=batch_size, lr=learning_rate)
+policy_net_params = [av_model.policy_net.state_dict()]
+eval_success_rate = np.zeros(rounds)
 
 if use_wandb:
     wandb_config = {
@@ -84,6 +86,7 @@ for round in range(rounds):
     # 2. Evaluate (Interact)
     y_train = evaluate(av_model, env, scenarios=X_train)
     success_rate = 1 - np.sum(y_train) / eval_size
+    eval_success_rate[round] = success_rate
     if use_wandb:
         wandb_logger.log({'Evaluate success rate': success_rate})
     print('    Evaluate success rate: %.3f' % success_rate)
@@ -113,6 +116,9 @@ for round in range(rounds):
     t8 = time.time()
     print('    Training AV model time: %.1fs' % (t8-t7))
     
+    # save AV model parameters
+    policy_net_params.append(av_model.policy_net.state_dict())
+    
     if use_wandb:
         wandb_logger.log({'Round time': t8-t2, 'Total time': t8-t0})
     print('    Time of the whole round: %.1fs' % (t8-t2))
@@ -120,9 +126,17 @@ for round in range(rounds):
 
 # test on all scenarios
 t8 = time.time()
+
 all_label = evaluate(av_model, env, scenarios=lib.data)
 success_rate = 1 - np.sum(all_label) / all_label.size
 print('Success rate after training: %.3f' % success_rate)
+
+best_round_index = np.argmax(eval_success_rate)
+av_model.policy_net.load_state_dict(policy_net_params[best_round_index])
+all_label = evaluate(av_model, env, scenarios=lib.data)
+success_rate = 1 - np.sum(all_label) / all_label.size
+print('Success rate of the best round: %.3f' % success_rate)
+
 t9 = time.time()
 print('Evaluation time: %.1fs' % (t9-t8))
 print('Total time: %.1fs' % (t9-t0))
