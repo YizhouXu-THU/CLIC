@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
-
+torch.autograd.set_detect_anomaly(True)
 from utils.environment import Env
 
 
@@ -240,7 +240,7 @@ class RL_brain:
         action = self.policy_net.choose_action(state, deterministic=deterministic)
         return action.cpu().numpy()
 
-    def train(self) -> dict[str, float]:
+    def train(self, auto_alpha=True) -> dict[str, float]:
         state, action, reward, next_state, not_done = self.replay_buffer.sample(batch_size=self.batch_size)
         new_action, log_prob = self.policy_net.evaluate(state)
 
@@ -265,26 +265,29 @@ class RL_brain:
 
         # policy loss function
         policy_loss = (alpha * log_prob - torch.min(new_q1_value, new_q2_value)).mean()
-        policy_loss = torch.as_tensor(policy_loss, device=self.device)
+        # policy_loss = torch.as_tensor(policy_loss, device=self.device)
 
         # update parameters
         self.value_optimizer.zero_grad()
-        self.q1_optimizer.zero_grad()
-        self.q2_optimizer.zero_grad()
-        self.policy_optimizer.zero_grad()
-        self.alpha_optimizer.zero_grad()
-
         value_loss.backward()
-        q1_value_loss.backward()
-        q2_value_loss.backward()
-        policy_loss.backward()
-        alpha_loss.backward()
-
         self.value_optimizer.step()
+        
+        self.q1_optimizer.zero_grad()
+        q1_value_loss.backward()
         self.q1_optimizer.step()
+        
+        self.q2_optimizer.zero_grad()
+        q2_value_loss.backward()
         self.q2_optimizer.step()
+        
+        self.policy_optimizer.zero_grad()
+        policy_loss.backward()
         self.policy_optimizer.step()
-        self.alpha_optimizer.step()
+        
+        if auto_alpha:
+            self.alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optimizer.step()
         
         # soft update of target network
         for target_param, param in zip(self.target_value_net.parameters(), self.value_net.parameters()):

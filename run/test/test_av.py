@@ -16,11 +16,12 @@ eval_size = 4096
 batch_size = 128
 train_size = 128
 epochs = 20
-episodes = 20
+episodes = 10
 learning_rate = 1e-4
-use_wandb = True
+auto_alpha = False
+use_wandb = False
 sumo_gui = False
-device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
@@ -35,6 +36,7 @@ if use_wandb:
         'epochs': epochs, 
         'episodes': episodes, 
         'learning_rate': learning_rate, 
+        'auto_alpha': auto_alpha, 
     }
     wandb_logger = wandb.init(
         project='CL for Autonomous Vehicle Training and Testing', 
@@ -48,9 +50,7 @@ else:
 index = lib.sample(size=train_size)
 train_scenario = lib.data[index]
 
-# av_model = train_av_online(av_model, env, scenarios=train_scenario, 
-#                            episodes=episodes, wandb_logger=wandb_logger)
-av_model = train_av(av_model, env, scenarios=train_scenario, 
-                    epochs=epochs, episodes=episodes, wandb_logger=wandb_logger)
+av_model = train_av_online(av_model, env, train_scenario, episodes, auto_alpha, wandb_logger)
+# av_model = train_av(av_model, env, train_scenario, epochs, episodes, auto_alpha, wandb_logger)
 
 env.close()
