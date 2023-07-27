@@ -52,7 +52,7 @@ def evaluate_random(env: Env, scenarios: np.ndarray) -> np.ndarray:
         
         while not done:
             step += 1
-            action = np.random.uniform(-1, 1, size=(2,))
+            action = np.array([np.random.uniform(range[0], range[1]) for range in env.action_range])
             next_state, reward, done, info = env.step(action, timestep=step)
             state = next_state
         
