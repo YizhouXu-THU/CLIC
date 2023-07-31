@@ -59,7 +59,6 @@ if use_wandb:
 else:
     wandb_logger = None
 
-# TODO: may need to pretrain av_model
 t1 = time.time()
 print('Preparation time: %.1fs' % (t1-t0))
 
@@ -135,7 +134,7 @@ best_round_index = np.argmax(eval_success_rate)
 av_model.policy_net.load_state_dict(policy_net_params[best_round_index])
 all_label = evaluate(av_model, env, scenarios=lib.data)
 success_rate = 1 - np.sum(all_label) / all_label.size
-print('Success rate of the best round: %.3f' % success_rate)
+print('The best round: %d, Success rate of the best round: %.3f' % (best_round_index, success_rate))
 
 t9 = time.time()
 print('Evaluation time: %.1fs' % (t9-t8))

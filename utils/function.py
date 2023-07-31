@@ -26,7 +26,7 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
             
             while not done:
                 step += 1
-                action = av_model.choose_action(state, deterministic=False)
+                action = av_model.choose_action(state, deterministic=True)
                 next_state, reward, done, info = env.step(action, timestep=step)
                 state = next_state
             
@@ -203,7 +203,7 @@ def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray,
             while not done:
                 step += 1
                 total_step += 1
-                action = av_model.choose_action(state)
+                action = av_model.choose_action(state, deterministic=False)
                 next_state, reward, done, info = env.step(action, timestep=step)
                 not_done = 0.0 if done else 1.0
                 av_model.replay_buffer.store_transition((state, action, reward, next_state, not_done))
