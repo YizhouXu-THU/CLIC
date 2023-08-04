@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
-torch.autograd.set_detect_anomaly(True)
+
 from utils.environment import Env
 
 
@@ -265,23 +265,22 @@ class RL_brain:
 
         # policy loss function
         policy_loss = (alpha * log_prob - torch.min(new_q1_value, new_q2_value)).mean()
-        # policy_loss = torch.as_tensor(policy_loss, device=self.device)
+        policy_loss = torch.as_tensor(policy_loss, device=self.device)
 
         # update parameters
         self.value_optimizer.zero_grad()
-        value_loss.backward()
-        self.value_optimizer.step()
-        
         self.q1_optimizer.zero_grad()
-        q1_value_loss.backward()
-        self.q1_optimizer.step()
-        
         self.q2_optimizer.zero_grad()
-        q2_value_loss.backward()
-        self.q2_optimizer.step()
-        
         self.policy_optimizer.zero_grad()
+
+        value_loss.backward()
+        q1_value_loss.backward()
+        q2_value_loss.backward()
         policy_loss.backward()
+
+        self.value_optimizer.step()
+        self.q1_optimizer.step()
+        self.q2_optimizer.step()
         self.policy_optimizer.step()
         
         if auto_alpha:
