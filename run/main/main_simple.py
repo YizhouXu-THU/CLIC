@@ -1,9 +1,11 @@
 import os
 import sys
-sys.path.append(os.getcwd())
+root_path = os.getcwd()
+sys.path.append(root_path)
 
 import time
 from datetime import datetime
+from copy import deepcopy
 import wandb
 import numpy as np
 import torch
@@ -11,7 +13,8 @@ import torch
 from utils.scenario_lib import scenario_lib
 from utils.environment import Env
 from utils.av_policy import RL_brain
-from utils.function import evaluate, train_av, train_av_online
+# from utils.av_policy_per import RL_brain
+from utils.function import set_random_seed, evaluate, train_av_online, cm_result
 
 
 # Prepare
@@ -20,19 +23,33 @@ t0 = time.time()
 eval_size = 4096
 batch_size = 128
 train_size = 128
-rounds = 20
+rounds = 10
 epochs = 20
 episodes = 10
 learning_rate = 1e-4
-auto_alpha = True
+alpha = 0.1
+reward_type = 'r3'
+auto_alpha = False
 use_wandb = True
 sumo_gui = False
+save_model = True
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+random_seed = 42    # 14, 42, 51, 71, 92
+name = datetime.now().strftime('%Y%m%d-%H%M')+'-simple-seed='+str(random_seed)  # for example: '20230509-1544-simple-seed=42'
+set_random_seed(random_seed)
 
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
-env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
+env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, 
+          reward_type=reward_type, seed=random_seed)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
-                    batch_size=batch_size, lr=learning_rate)
+                    batch_size=batch_size, lr=learning_rate, alpha=alpha)
+policy_net_params = [deepcopy(av_model.policy_net.state_dict())]
+if save_model:
+    save_path = './model/' + name + '/'
+    os.makedirs(save_path, exist_ok=True)
+    torch.save(av_model.policy_net.state_dict(), save_path+'round0_policy.pth')
+
+eval_success_rate = np.zeros(rounds)
 
 if use_wandb:
     wandb_config = {
@@ -43,11 +60,15 @@ if use_wandb:
         'epochs': epochs, 
         'episodes': episodes, 
         'learning_rate': learning_rate, 
+        'alpha': alpha, 
+        'reward_type': reward_type, 
         'auto_alpha': auto_alpha, 
-    }
+        'seed': random_seed, 
+        }
     wandb_logger = wandb.init(
         project='CL for Autonomous Vehicle Training and Testing', 
-        name=datetime.now().strftime('%Y%m%d-%H%M')+'-simple',  # for example: '20230509-1544-simple'
+        name=name, 
+        entity='xyz_thu',
         config=wandb_config, 
         reinit=True, 
         )
@@ -58,9 +79,9 @@ t1 = time.time()
 print('Preparation time: %.1fs' % (t1-t0))
 
 # test on all scenarios
-all_label = evaluate(av_model, env, scenarios=lib.data)
-success_rate = 1 - np.sum(all_label) / all_label.size
-print('Success rate before training: %.3f' % success_rate)
+metrics_before, gt_label_before = evaluate(av_model, env, scenarios=lib.data, need_metrics=True)
+success_rate_before = 1 - np.sum(gt_label_before) / gt_label_before.size
+print('Success rate before training: %.4f\n' % success_rate_before, metrics_before)
 t2 = time.time()
 print('Evaluation time: %.1fs' % (t2-t1))
 
@@ -78,11 +99,12 @@ for round in range(rounds):
     print('    Sampling time: %.1fs' % (t3-t2))
 
     # Evaluate (Interact)
-    y_train = evaluate(av_model, env, scenarios=X_train)
+    _, y_train = evaluate(av_model, env, scenarios=X_train)
     success_rate = 1 - np.sum(y_train) / eval_size
+    eval_success_rate[round] = success_rate
     if use_wandb:
         wandb_logger.log({'Evaluate success rate': success_rate})
-    print('    Evaluate success rate: %.3f' % success_rate)
+    print('    Evaluate success rate: %.4f' % success_rate)
     t4 = time.time()
     print('    Evaluation time: %.1fs' % (t4-t3))
 
@@ -93,8 +115,10 @@ for round in range(rounds):
     print('    Selecting time: %.1fs' % (t7-t4))
 
     # Train AV model
-    av_model = train_av(av_model, env, train_scenario, epochs, episodes, auto_alpha, wandb_logger)
-    # av_model = train_av_online(av_model, env, train_scenario, episodes, auto_alpha, wandb_logger)
+    train_av_online(av_model, env, train_scenario, episodes, auto_alpha, wandb_logger)
+    policy_net_params.append(deepcopy(av_model.policy_net.state_dict()))
+    if save_model:
+        torch.save(av_model.policy_net.state_dict(), './model/'+name+'/round'+str(round+1)+'_policy.pth')
     t8 = time.time()
     print('    Training AV model time: %.1fs' % (t8-t7))
     
@@ -105,9 +129,19 @@ for round in range(rounds):
 
 # test on all scenarios
 t8 = time.time()
-all_label = evaluate(av_model, env, scenarios=lib.data)
-success_rate = 1 - np.sum(all_label) / all_label.size
-print('Success rate after training: %.3f' % success_rate)
+
+metrics_end, gt_label_end = evaluate(av_model, env, scenarios=lib.data, need_metrics=True)
+success_rate_end = 1 - np.sum(gt_label_end) / gt_label_end.size
+print('Success rate after training: %.4f\n' % success_rate_end, metrics_end)
+cm_result(gt_label_before, gt_label_end)
+
+best_round_index = np.argmax(eval_success_rate)
+av_model.policy_net.load_state_dict(policy_net_params[best_round_index])
+metrics_best, gt_label_best = evaluate(av_model, env, scenarios=lib.data, need_metrics=True)
+success_rate_best = 1 - np.sum(gt_label_best) / gt_label_best.size
+print('The best round: %d, Success rate of the best round: %.4f\n' % (best_round_index+1, success_rate_best), metrics_best)
+cm_result(gt_label_before, gt_label_best)
+
 t9 = time.time()
 print('Evaluation time: %.1fs' % (t9-t8))
 print('Total time: %.1fs' % (t9-t0))

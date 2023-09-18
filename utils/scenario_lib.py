@@ -1,11 +1,10 @@
 import os
 import math
+from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
-
-from utils.predictor import predictor
 
 
 class scenario_lib:
@@ -14,7 +13,7 @@ class scenario_lib:
         self.npy_path = npy_path
         self.max_bv_num = 0                         # initialize with 0
         self.max_timestep = 0                       # initialize with 0
-        self.type_count = {}                        # count separately based on the number of bv
+        self.type_count = {}                        # count separately based on the number of BV
         self.data = self.load_data()
         self.scenario_num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
@@ -24,7 +23,7 @@ class scenario_lib:
         """Load all data under the path. """
         if os.path.exists(self.npy_path):   # load from .npy file
             data = np.load(self.npy_path)
-            data = data[:, :-1]     # the last column is the predicted label and is not needed here
+            data = data[:, :-1]     # the last column is the predicted labels and is not needed here
             self.max_timestep = int(np.max(data[:, ::6]))
             for subpath in os.listdir(self.path):
                 bv_num = int(subpath[-1])
@@ -34,18 +33,26 @@ class scenario_lib:
                     n += 1
                 self.type_count[bv_num] = n
         else:   # load from original .csv files
-            data = []
+            data_dict = {}
             for subpath in os.listdir(self.path):
                 bv_num = int(subpath[-1])
                 self.max_bv_num = max(self.max_bv_num, bv_num)
                 n = 0
                 for filename in os.listdir(self.path+subpath):
+                # for filename in tqdm(os.listdir(self.path+subpath), unit='file'):
                     scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
                     self.max_timestep = max(self.max_timestep, int(scenario[-1, 0]))
-                    data.append(scenario)
+                    if n == 0:
+                        data_dict[bv_num] = [scenario]
+                    else:
+                        data_dict[bv_num].append(scenario)
                     n += 1
                 self.type_count[bv_num] = n
-            data = self.fill_zero(data)
+            data = sorted(data_dict.items(), key=lambda x: x[0])    # sort by the number of BV
+            data_list = []
+            for _, value in data:
+                data_list.extend(value)
+            data = self.fill_zero(data_list)
         self.max_timestep += 1  # starting from 0
         return data
     
@@ -78,14 +85,17 @@ class scenario_lib:
         """
         return np.random.randint(self.scenario_num, size=size)
     
-    def labeling(self, predictor: predictor) -> None:
-        """Label each scenario using the Difficulty Predictor. """
+    def labeling(self, predictor) -> None:
+        """
+        Label each scenario using the Difficulty Predictor. 
+        
+        The label value is a real number within [0,1]. 
+        """
         predictor.eval()
         with torch.no_grad():
-            for i in range(self.scenario_num):
-                scenario = torch.tensor(self.data[i], dtype=torch.float32, device=predictor.device).unsqueeze(dim=0)
-                label = predictor(scenario).item()
-                self.labels[i] = label
+            scenarios = torch.tensor(self.data, dtype=torch.float32, device=predictor.device)
+            labels = predictor(scenarios).cpu().numpy()
+            self.labels = labels
     
     def select(self, size: int) -> np.ndarray:
         """
@@ -100,17 +110,46 @@ class scenario_lib:
         # step = math.floor(self.total_num / (size-1))
         # index = labels[0, ::step].astype(int)
         # return index
+        self.labels += 1e-6
         p = self.labels / np.sum(self.labels)
         return np.random.choice(self.scenario_num, size=size, replace=False, p=p)
     
-    def visualize_label_distribution(self, num_select: int, 
-                                     save_path='./figure/', filename='label_distribution.png') -> None:
-        """Visualize the distribution of labels using histogram. """
-        plt.hist(self.labels, bins=100, density=True, label='all label', alpha=0.8)
+    def select_bv_num(self, bv_nums: list[int], size: int) -> np.ndarray:
+        """
+        Randomly select in the scenarios corresponding to the given bv_num. 
+
+        The selected scenarios is used to train the AV model. 
+
+        Return an array of index. 
+        """
+        num = 0
+        for bv_num in bv_nums:
+            num += self.type_count[bv_num]
+        return np.random.randint(num, size=size)
+    
+    def visualize_label_distribution(self, num_select: int, num_sample: int, 
+                                     save_path='./figure/', filename='label_distribution.png', 
+                                     title='Label Distribution') -> None:
+        """Visualize the distribution of all labels and the labels selected using histogram. """
         select_labels = self.labels[self.select(size=num_select)]
+        sample_labels = self.labels[self.sample(size=num_sample)]
+        
+        # def parzen_window(x: float, X: np.ndarray, h: float) -> np.ndarray:
+        #     k = 1 / (np.sqrt(2*np.pi)*h) * np.exp(-((X-x)**2)/(2*h**2))
+        #     return np.average(k)
+        # all_pdf_est = lambda x: np.array([parzen_window(x[i], self.labels, h=0.5) for i in range(len(x))])
+        
+        plt.figure()
+        # x0 = np.arange(0, 1.01, 0.01)
+        # all_pdf = all_pdf_est(x0)
+        # plt.fill_between(x0, all_pdf, label='all label', alpha=0.2)
+        plt.hist(self.labels, bins=100, density=True, label='all label', alpha=0.8)
         plt.hist(select_labels, bins=20, density=True, label='selected label', alpha=0.5)
+        plt.hist(sample_labels, bins=50, density=True, label='sampled label', alpha=0.5)
+        
         plt.legend(loc='upper center')
-        plt.title('Label Distribution')
+        plt.xlabel('Label')
+        plt.title(title)
         if save_path is not None:
             plt.savefig(save_path + filename)
         else:

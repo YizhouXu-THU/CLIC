@@ -11,12 +11,9 @@ import numpy as np
 import torch
 
 from utils.scenario_lib import scenario_lib
-from utils.predictor import predictor_dnn
 from utils.environment import Env
 from utils.av_policy import RL_brain
-# from utils.av_policy_per import RL_brain
-from utils.function import (set_random_seed, train_predictor, evaluate, 
-                            train_av_online, cm_result, matrix_test, draw_surface)
+from utils.function import set_random_seed, evaluate, train_av_online, cm_result
 
 
 # 0. Prepare
@@ -26,7 +23,6 @@ eval_size = 4096
 batch_size = 128
 train_size = 128
 rounds = 10
-epochs = 20
 episodes = 10
 learning_rate = 1e-4
 alpha = 0.1
@@ -37,12 +33,10 @@ sumo_gui = False
 save_model = True
 device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 random_seed = 42    # 14, 42, 51, 71, 92
-name = datetime.now().strftime('%Y%m%d-%H%M')+'-CL-seed='+str(random_seed)  # for example: '20230509-1544-CL-seed=42'
+name = datetime.now().strftime('%Y%m%d-%H%M')+'-CL_bv_num-seed='+str(random_seed)   # for example: '20230509-1544-CL_bv_num-seed=42'
 set_random_seed(random_seed)
 
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
-predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
-predictor.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, 
           reward_type=reward_type, seed=random_seed)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 
@@ -62,7 +56,6 @@ if use_wandb:
         'batch_size': batch_size, 
         'train_size': train_size,
         'rounds': rounds, 
-        'epochs': epochs, 
         'episodes': episodes, 
         'learning_rate': learning_rate, 
         'alpha': alpha, 
@@ -97,13 +90,13 @@ for round in range(rounds):
     print('Round %d' % (round+1))
     t2 = time.time()
     
-    # 1. Sample
+    # Sample
     index = lib.sample(size=eval_size)
     X_train = lib.data[index]
     t3 = time.time()
     print('    Sampling time: %.1fs' % (t3-t2))
 
-    # 2. Evaluate (Interact)
+    # Evaluate (Interact)
     _, y_train = evaluate(av_model, env, scenarios=X_train)
     success_rate = 1 - np.sum(y_train) / eval_size
     eval_success_rate[round] = success_rate
@@ -113,27 +106,23 @@ for round in range(rounds):
     t4 = time.time()
     print('    Evaluation time: %.1fs' % (t4-t3))
 
-    # 3. Train reward predictor
-    train_predictor(predictor, X_train, y_train, epochs=epochs, lr=learning_rate, 
-                    batch_size=batch_size, wandb_logger=wandb_logger, device=device)
-    predictor_params.append(deepcopy(predictor.state_dict()))
-    if save_model:
-        torch.save(predictor.state_dict(), './model/'+name+'/round'+str(round+1)+'_predictor.pth')
-    t5 = time.time()
-    print('    Training reward predictor time: %.1fs' % (t5-t4))
-
-    # 4. Labeling
-    lib.labeling(predictor)
-    t6 = time.time()
-    print('    Labeling time: %.1fs' % (t6-t5))
-
-    # 5. Select
-    index = lib.select(size=train_size)
+    # Select
+    if round in [0, 1]:
+        bv_nums = [1]
+    elif round in [2, 3]:
+        bv_nums = [1, 2]
+    elif round in [4, 5, 6]:
+        bv_nums = [1, 2, 3]
+    elif round in [7, 8, 9]:
+        bv_nums = [1, 2, 3, 4]
+    else:
+        bv_nums = [1, 2, 3, 4]
+    index = lib.select_bv_num(bv_nums, size=train_size)
     train_scenario = lib.data[index]
     t7 = time.time()
-    print('    Selecting time: %.1fs' % (t7-t6))
+    print('    Selecting time: %.1fs' % (t7-t4))
 
-    # 6. Train AV model
+    # Train AV model
     train_av_online(av_model, env, train_scenario, episodes, auto_alpha, wandb_logger)
     policy_net_params.append(deepcopy(av_model.policy_net.state_dict()))
     if save_model:
@@ -163,16 +152,6 @@ cm_result(gt_label_before, gt_label_best)
 
 t9 = time.time()
 print('Evaluation time: %.1fs' % (t9-t8))
-
-# matrix test
-results = matrix_test(predictor_params, policy_net_params, av_model, predictor, env, lib, eval_size)
-np.set_printoptions(precision=4)
-print('Matrix experiment results:\n', results)
-# draw 3D surface graph
-# draw_surface(results, filename='3D_matrix.png')
-
-t10 = time.time()
-print('Matrix experiment time: %.1fs' % (t10-t9))
-print('Total time: %.1fs' % (t10-t0))
+print('Total time: %.1fs' % (t9-t0))
 
 env.close()

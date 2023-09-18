@@ -1,19 +1,15 @@
 import os
 import sys
-sys.path.append(os.getcwd())
+root_path = os.getcwd()
+sys.path.append(root_path)
 
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from sklearn.model_selection import train_test_split
 
 from utils.scenario_lib import scenario_lib
-from utils.predictor import predictor
-from utils.predictor_rnn import predictor_rnn
-from utils.environment import Env
-from utils.av_policy import RL_brain
-from utils.function import evaluate, train_valid_predictor
+from utils.predictor import predictor_dnn, predictor_rnn, predictor_vae
+from utils.function import train_validate_predictor, train_validate_predictor_vae
 
 
 # Prepare
@@ -34,12 +30,15 @@ total_num, max_dim = X.shape
 test_size = total_num - eval_size
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
 
-pred = predictor(num_input=max_dim, device=device)
-# pred = predictor_rnn(timestep=lib.max_timestep, num_input=max_dim, device=device)
-pred.to(device)
+predictor = predictor_dnn(input_dim=max_dim, device=device)
+# predictor = predictor_rnn(timestep=lib.max_timestep, input_dim=max_dim, device=device)
+# predictor = predictor_vae(input_dim=max_dim, device=device)
+predictor.to(device)
 
-pred = train_valid_predictor(pred, X_train, y_train, X_test, y_test, 
-                             epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
+train_validate_predictor(predictor, X_train, y_train, X_test, y_test, 
+                         epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
+# train_validate_predictor_vae(predictor, X_train, y_train, X_test, y_test, 
+#                              epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
 
-lib.labeling(pred)
-lib.visualize_label_distribution(num_select=train_size)
+lib.labeling(predictor)
+lib.visualize_label_distribution(num_select=train_size, num_sample=eval_size)
