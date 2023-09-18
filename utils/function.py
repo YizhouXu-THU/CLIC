@@ -26,7 +26,7 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
             
             while not done:
                 step += 1
-                action = av_model.choose_action(state, deterministic=False)
+                action = av_model.choose_action(state, deterministic=True)
                 next_state, reward, done, info = env.step(action, timestep=step)
                 state = next_state
             
@@ -34,6 +34,32 @@ def evaluate(av_model: RL_brain, env: Env, scenarios: np.ndarray) -> np.ndarray:
                 labels[i] = 1
             elif info == 'succeed':
                 labels[i] = 0
+    
+    return labels
+
+
+def evaluate_random(env: Env, scenarios: np.ndarray) -> np.ndarray:
+    """Return the performance of the random policy in the given scenarios (accident: 1, otherwise: 0). """
+    scenario_num = scenarios.shape[0]
+    labels = np.zeros(scenario_num)
+    print('    evaluating...')
+    
+    # for i in trange(scenario_num):
+    for i in range(scenario_num):
+        state = env.reset(scenarios[i])
+        done = False
+        step = 0
+        
+        while not done:
+            step += 1
+            action = np.array([np.random.uniform(range[0], range[1]) for range in env.action_range])
+            next_state, reward, done, info = env.step(action, timestep=step)
+            state = next_state
+        
+        if info == 'fail':
+            labels[i] = 1
+        elif info == 'succeed':
+            labels[i] = 0
     
     return labels
 
@@ -203,7 +229,7 @@ def train_av_online(av_model: RL_brain, env: Env, scenarios: np.ndarray,
             while not done:
                 step += 1
                 total_step += 1
-                action = av_model.choose_action(state)
+                action = av_model.choose_action(state, deterministic=False)
                 next_state, reward, done, info = env.step(action, timestep=step)
                 not_done = 0.0 if done else 1.0
                 av_model.replay_buffer.store_transition((state, action, reward, next_state, not_done))

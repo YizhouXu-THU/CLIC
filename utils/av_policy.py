@@ -114,8 +114,8 @@ class SoftQNet(nn.Module):
 class PolicyNet(nn.Module):
     """Actor"""
 
-    # def __init__(self, state_dim: int, action_dim: int, action_range: np.ndarray, 
-    def __init__(self, state_dim: int, action_dim: int, 
+    def __init__(self, state_dim: int, action_dim: int, action_range: np.ndarray, 
+    # def __init__(self, state_dim: int, action_dim: int, 
                  log_std_min=-20, log_std_max=2, edge=3e-3, device='cuda') -> None:
         super(PolicyNet, self).__init__()
         self.device = device
@@ -160,15 +160,15 @@ class PolicyNet(nn.Module):
             action = normal.sample()
         action = torch.tanh(action).detach()    # shape: [action_dim], range: [-1, 1]
 
-        # action_split = torch.chunk(action, chunks=2, dim=0)     # split the action into speed and yaw
-        # # extend the action to the actual range
-        # # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
-        # # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
-        # action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
-        #              (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
-        # action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
-        #              (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
-        # action = torch.cat((action_abs, action_arg))
+        action_split = torch.chunk(action, chunks=2, dim=0)     # split the action into speed and yaw
+        # extend the action to the actual range
+        # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
+        # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
+                     (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
+        action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
+                     (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
+        action = torch.cat((action_abs, action_arg))
 
         return action   # shape: [action_dim]
 
@@ -186,15 +186,15 @@ class PolicyNet(nn.Module):
         log_prob = normal.log_prob(mean + std*z) - torch.log(1 - action.pow(2) + epsilon)
         log_prob = torch.sum(log_prob, dim=1).unsqueeze(-1) # dimension elevate after summation
         
-        # action_split = torch.chunk(action, chunks=2, dim=1)     # split the action into speed and yaw
-        # # extend the action to the actual range
-        # # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
-        # # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
-        # action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
-        #              (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
-        # action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
-        #              (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
-        # action = torch.cat((action_abs, action_arg), dim=1)
+        action_split = torch.chunk(action, chunks=2, dim=1)     # split the action into speed and yaw
+        # extend the action to the actual range
+        # action_abs = torch.clamp(action_split[0], self.action_range[0,0], self.action_range[0,1])
+        # action_arg = torch.clamp(action_split[1], self.action_range[1,0], self.action_range[1,1])
+        action_abs = (self.action_range[0,1] + self.action_range[0,0] + \
+                     (self.action_range[0,1] - self.action_range[0,0]) * action_split[0]) / 2
+        action_arg = (self.action_range[1,1] + self.action_range[1,0] + \
+                     (self.action_range[1,1] - self.action_range[1,0]) * action_split[1]) / 2
+        action = torch.cat((action_abs, action_arg), dim=1)
 
         return action, log_prob # shape: [batch_size, action_dim], [batch_size, 1]
 
@@ -218,8 +218,8 @@ class RL_brain:
         self.q1_net = SoftQNet(input_dim=self.state_dim+self.action_dim).to(device)
         self.q2_net = SoftQNet(input_dim=self.state_dim+self.action_dim).to(device)
         self.policy_net = PolicyNet(state_dim=self.state_dim, action_dim=self.action_dim, 
-                                    device=device).to(device)
-        #                             action_range=self.action_range, device=device).to(device)
+                                    # device=device).to(device)
+                                    action_range=self.action_range, device=device).to(device)
         self.log_alpha = ScalarNet(init_value=np.log(0.2)).to(device)
         
         # initialize target network (with the same form as the soft update process)
@@ -245,7 +245,10 @@ class RL_brain:
         new_action, log_prob = self.policy_net.evaluate(state)
 
         # alpha loss function
-        alpha_loss = -(self.log_alpha() * (log_prob + self.target_entropy).detach()).mean()
+        if auto_alpha:
+            alpha_loss = -(self.log_alpha() * (log_prob + self.target_entropy).detach()).mean()
+        else:
+            alpha_loss = torch.tensor(0.0, device=self.device)
         alpha = self.log_alpha().exp() * self.alpha_multiplier
 
         # V value loss function
@@ -272,20 +275,21 @@ class RL_brain:
         self.q1_optimizer.zero_grad()
         self.q2_optimizer.zero_grad()
         self.policy_optimizer.zero_grad()
+        if auto_alpha:
+            self.alpha_optimizer.zero_grad()
 
         value_loss.backward()
         q1_value_loss.backward()
         q2_value_loss.backward()
         policy_loss.backward()
+        if auto_alpha:
+            alpha_loss.backward()
 
         self.value_optimizer.step()
         self.q1_optimizer.step()
         self.q2_optimizer.step()
         self.policy_optimizer.step()
-        
         if auto_alpha:
-            self.alpha_optimizer.zero_grad()
-            alpha_loss.backward()
             self.alpha_optimizer.step()
         
         # soft update of target network

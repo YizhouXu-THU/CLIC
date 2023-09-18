@@ -1,9 +1,10 @@
-/data/
-/log/
-/__pycache__/
 /.vscode/
-/utils/__pycache__/
+/data/
+/figure/
+/log/
+/model/
 /run/lib_generation.py
+/utils/__pycache__/
 /references/
 /wandb/
-nohup.out
+/nohup.out
