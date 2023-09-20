@@ -19,7 +19,7 @@ train_size = 128
 epochs = 20
 learning_rate = 1e-4
 sumo_gui = False
-device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')

@@ -21,7 +21,7 @@ from utils.function import set_random_seed, evaluate, train_predictor
 eval_size = 4096
 train_size = 4096
 sumo_gui = False
-device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 random_seed = 92    # 14, 42, 51, 71, 92
 name = './model/20230906-2231-fixed_alpha=0.1-seed='+str(random_seed)+'/round10_policy.pth'
 set_random_seed(random_seed)

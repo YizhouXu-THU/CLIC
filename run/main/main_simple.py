@@ -33,7 +33,7 @@ auto_alpha = False
 use_wandb = True
 sumo_gui = False
 save_model = True
-device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 random_seed = 42    # 14, 42, 51, 71, 92
 name = datetime.now().strftime('%Y%m%d-%H%M')+'-simple-seed='+str(random_seed)  # for example: '20230509-1544-simple-seed=42'
 set_random_seed(random_seed)

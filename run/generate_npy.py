@@ -13,7 +13,7 @@ from utils.function import evaluate
 
 
 sumo_gui = False
-device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 lib = scenario_lib(path='./data/all/', npy_path='')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
