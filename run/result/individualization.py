@@ -29,7 +29,7 @@ set_random_seed(random_seed)
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, seed=random_seed)
 av_model = RL_brain(env, device=device)
-av_model.policy_net.load_state_dict(torch.load(name))
+av_model.policy_net.load_state_dict(torch.load(name, map_location=device))
 index = lib.sample(eval_size)
 X_train = lib.data[index]
 
@@ -38,7 +38,8 @@ def defect_evaluate(av_model, env, scenarios: np.ndarray) -> np.ndarray:
     labels = np.zeros(scenario_num)
     
     with torch.no_grad():
-        for i in trange(scenario_num):
+        # for i in trange(scenario_num):
+        for i in range(scenario_num):
             state = env.reset(scenarios[i])
             done = False
             step = 0

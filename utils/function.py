@@ -577,7 +577,7 @@ def cm_result(label_before: np.ndarray, label_after: np.ndarray) -> None:
 
 
 def matrix_test(predictor_params: list, policy_net_params: list, 
-                av_model, predictor, env, scenario_lib, test_size=4096) -> np.ndarray:
+                av_model, predictor, env, scenario_lib, test_size=4096, device='cuda') -> np.ndarray:
     """
     Conduct matrix testing on the combination of predictor models and AV models for each stage, 
     label each scenario with the predictor, select key scenarios for testing the AV model, 
@@ -590,10 +590,10 @@ def matrix_test(predictor_params: list, policy_net_params: list,
     results = np.zeros((len(policy_net_params), len(predictor_params)))
     # matrix test and get results
     for i, policy_net_param in enumerate(policy_net_params):
-        av_model.policy_net.load_state_dict(policy_net_param)
+        av_model.policy_net.load_state_dict(policy_net_param, map_location=device)
         
         for j, predictor_param in enumerate(predictor_params):
-            predictor.load_state_dict(predictor_param)
+            predictor.load_state_dict(predictor_param, map_location=device)
             
             scenario_lib.labeling(predictor)
             index = scenario_lib.select(size=test_size)

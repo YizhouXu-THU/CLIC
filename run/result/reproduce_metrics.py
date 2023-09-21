@@ -22,7 +22,7 @@ set_random_seed(random_seed)
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, seed=random_seed)
 av_model = RL_brain(env, capacity=0, device=device)
-av_model.policy_net.load_state_dict(torch.load('./model/'+name+'/round10_policy.pth'))
+av_model.policy_net.load_state_dict(torch.load('./model/'+name+'/round10_policy.pth', map_location=device))
 
 if use_wandb:
     wandb_config = {'seed': random_seed}

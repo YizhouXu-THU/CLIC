@@ -165,7 +165,7 @@ t9 = time.time()
 print('Evaluation time: %.1fs' % (t9-t8))
 
 # matrix test
-results = matrix_test(predictor_params, policy_net_params, av_model, predictor, env, lib, eval_size)
+results = matrix_test(predictor_params, policy_net_params, av_model, predictor, env, lib, eval_size, device)
 np.set_printoptions(precision=4)
 print('Matrix experiment results:\n', results)
 # draw 3D surface graph

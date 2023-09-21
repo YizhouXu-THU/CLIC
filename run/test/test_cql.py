@@ -193,7 +193,7 @@ def main(argv):
 
     # matrix test
     results = matrix_test(predictor_params, policy_net_params, av_model, predictor, env, lib, FLAGS.eval_size, 
-                          filename='3D_matrix_cql.png')
+                          filename='3D_matrix_cql.png', device=device)
 
     np.set_printoptions(precision=4)
     print('Matrix experiment results:\n', results)

@@ -30,7 +30,7 @@ fig = plt.figure(figsize=(11.5, 3.5))
 gs = gridspec.GridSpec(1, 3, width_ratios=[1, 1, 1])
 
 # before training
-predictor.load_state_dict(torch.load('./model/'+name+'/round1_predictor.pth'))
+predictor.load_state_dict(torch.load('./model/'+name+'/round1_predictor.pth', map_location=device))
 lib.labeling(predictor)
 select_labels = lib.labels[lib.select(size=4096)]
 sample_labels = lib.labels[lib.sample(size=4096)]
@@ -60,7 +60,7 @@ plt.title('Before Training')
 # plt.savefig('./figure/label_distribution_before.pdf', bbox_inches='tight')
 
 # after training
-predictor.load_state_dict(torch.load('./model/'+name+'/round10_predictor.pth'))
+predictor.load_state_dict(torch.load('./model/'+name+'/round10_predictor.pth', map_location=device))
 lib.labeling(predictor)
 select_labels = lib.labels[lib.select(size=4096)]
 sample_labels = lib.labels[lib.sample(size=4096)]

@@ -13,7 +13,7 @@ else:
 
 
 class Env:
-    def __init__(self, max_bv_num: int, cfg_sumo='./config/lane.sumocfg', gui=False, 
+    def __init__(self, max_bv_num: int, cfg_sumo='./config/lane.sumocfg', gui=False, delay=0, 
                  reward_type='r3', bv_control='data', seed=42) -> None:
         self.cfg_sumo = cfg_sumo
         self.gui = gui
@@ -39,6 +39,7 @@ class Env:
         command += ['--eager-insert','True']
         command += ['--lanechange.duration', '1.5']
         command += ['--lateral-resolution', '0.0']
+        command += ['--delay', str(delay)]
         traci.start(command)
         
         self.av_pos = np.zeros(2)
