@@ -109,26 +109,30 @@ for i in range(10000):
 count = 0
 indices_normal = []
 predictor.load_state_dict(torch.load('./model/' + name_individualization + '/predictor.pth', map_location=device))
-for i in range(10000):
-    index = lib.sample(size=1)
-    scenario = lib.data[index].reshape(-1, 6)
-    init_bv_state = scenario[(scenario[:, 0] == 0) & (scenario[:, 1] != 0)]
-    for j in range(init_bv_state.shape[0]):
-        if (init_bv_state[j, 2] > scenario[0, 2]) and (init_bv_state[j, 3] > scenario[0, 3]):
-            # BV located on the left front of AV
-            indices_normal.append(index[0])
-            count += 1
-            break
+lib.labeling(predictor)
+# for i in range(10000):
+#     index = lib.select(size=1)
+#     scenario = lib.data[index].reshape(-1, 6)
+#     init_bv_state = scenario[(scenario[:, 0] == 0) & (scenario[:, 1] != 0)]
+#     for j in range(init_bv_state.shape[0]):
+#         if (init_bv_state[j, 2] > scenario[0, 2]) and (init_bv_state[j, 3] > scenario[0, 3]):
+#             # BV located on the left front of AV
+#             indices_normal.append(index[0])
+#             count += 1
+#             break
     
-    if count == 10:
-        print('Individualization experiment: Normal:', indices_normal)
-        break
+#     if count == 10:
+#         print('Individualization experiment: Normal:', indices_normal)
+#         break
+indices_normal = lib.select(size=10).tolist()
+print('Individualization experiment: Normal:', indices_normal)
 
 count = 0
 indices_defect = []
 predictor.load_state_dict(torch.load('./model/' + name_individualization + '/predictor_defect.pth', map_location=device))
+lib.labeling(predictor)
 for i in range(10000):
-    index = lib.sample(size=1)
+    index = lib.select(size=1)
     scenario = lib.data[index].reshape(-1, 6)
     init_bv_state = scenario[(scenario[:, 0] == 0) & (scenario[:, 1] != 0)]
     for j in range(init_bv_state.shape[0]):
@@ -173,12 +177,13 @@ def process_state(state: np.ndarray) -> np.ndarray:
     return state.reshape(-1)
 
 
-# indices_baseline = np.array([ 5348, 18407, 13299, 24498, 61668, 61674, 27400, 17003, 31751, 64172])
+# # indices_baseline = np.array([ 5348, 18407, 13299, 24498, 61668, 61674, 27400, 17003, 31751, 64172])
 indices_baseline = np.array([47867, 32157, 48248, 42768, 1183, 11322, 617, 17014, 37686, 37035])
 indices_matrix_pred = np.array([11430, 41948, 51227, 21068, 47176, 28651, 46525, 57168, 30522, 59252])
 indices_matrix_av = np.array([[31661, 38216], [34234, 50914], [ 3687, 59983], [13135, 59725], [10113, 64836], 
                               [44129, 32468], [21045, 65391], [39480, 65335], [17070, 47710], [54230, 62626]])
-indices_normal = np.array([40982, 16731, 55422, 29294, 36521, 20184, 20641, 32303, 54033, 12243])
+# indices_normal = np.array([40982, 16731, 55422, 29294, 36521, 20184, 20641, 32303, 54033, 12243])
+indices_normal = np.array([45151, 30095, 22871, 10797, 48639, 65407, 24735, 58743, 10636, 26395])
 indices_defect = np.array([54778, 58253, 36990, 50276, 38593, 17197, 10661, 48924, 19809, 11544])
 
 # baseline experiment
@@ -211,7 +216,7 @@ scenarios_10 = lib.data[indices_matrix_av[:, 1]]
 evaluate(av_model, env, scenarios_1)
 evaluate(av_model, env, scenarios_10)
 
-# individualization experiment
+# # individualization experiment
 av_model.policy_net.load_state_dict(torch.load('./model/' + name_CL + '/round10_policy.pth', map_location=device))
 evaluate(av_model, env, lib.data[indices_normal])
 defect_evaluate(av_model, env, lib.data[indices_defect])
