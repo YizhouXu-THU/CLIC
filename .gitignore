@@ -3,6 +3,7 @@
 /.vscode/
 /data/
 /figure/
+/image/
 /log/
 /model/
 /run/generate_lib.py
@@ -22,7 +23,4 @@
 /crash_data.npy
 /nohup.out
 /video/
-/NeurIPS 2023 ALOE.pdf
-/ICRA 2024.pdf
-/ICRA 2024/
-/ICRA 2024.zip
+/submit/

@@ -29,7 +29,7 @@ if use_wandb:
     wandb_logger = wandb.init(
         project='CL for Autonomous Vehicle Training and Testing', 
         name=name+'-metrics', 
-        entity='xyz_thu',
+        # entity='xyz_thu',
         config=wandb_config, 
         reinit=True, 
         )
