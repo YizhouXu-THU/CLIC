@@ -2,7 +2,7 @@
 
 This is the repo of Continual Driving Policy Optimization with **C**losed-**L**oop **I**ndividualized **C**urricula (CLIC) ([https://arxiv.org/abs/2309.14209](https://arxiv.org/abs/2309.14209)). 
 
-![CLIC](figure/algorithm.png)
+![CLIC](algorithm.png)
 
 ## Installation and Setups
 
