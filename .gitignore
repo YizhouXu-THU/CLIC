@@ -9,11 +9,8 @@
 /run/generate_lib.py
 /utils/__pycache__/
 /utils/cql/
-/utils/cql/.vscode/
-/utils/cql/tmp/
-/utils/cql/SimpleSAC/__pycache__
-/utils/cql/viskit/__pycache__
 /references/
+/run/test/test_cql.py
 /wandb/
 /result/
 /temp/
