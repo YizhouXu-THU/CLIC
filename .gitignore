@@ -19,4 +19,4 @@
 /video/
 /wandb/
 /nohup.out
-/.gitignore
+.gitignore
