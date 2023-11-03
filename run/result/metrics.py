@@ -7,9 +7,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 from matplotlib.ticker import ScalarFormatter
-import matplotlib
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
+from matplotlib import rcParams
+rcParams['pdf.fonttype'] = 42
+rcParams['ps.fonttype'] = 42
+
 
 x = np.arange(6)
 y1 = [79.76, 62.3, 90.3, 0.147, 0.0050]
@@ -43,7 +44,7 @@ axes[0].bar(x[5], y[0,5], yerr=err[0,5], error_kw=err_attr, width=bar_width, alp
 axes[0].plot([-0.7,5.7], [61.99,61.99], '--', color='black', linewidth=1, label='before training')
 axes[0].set_xticks([])
 axes[0].set_yticks([60, 65, 70, 75, 80])
-axes[0].set_title('SR')
+axes[0].set_title(r'SR(%)$\uparrow$')
 axes[0].set_ylim(60, 83)
 
 axes[1].bar(x[0], y[1,0], yerr=err[1,0], error_kw=err_attr, width=bar_width, alpha=0.8, label='CLIC', 
@@ -55,7 +56,7 @@ axes[1].bar(x[4], y[1,4], yerr=err[1,4], error_kw=err_attr, width=bar_width, alp
 axes[1].bar(x[5], y[1,5], yerr=err[1,5], error_kw=err_attr, width=bar_width, alpha=0.8, label='PCL')
 axes[1].set_xticks([])
 axes[1].set_yticks([50, 55, 60, 65])
-axes[1].set_title('FNR')
+axes[1].set_title(r'FNR(%)$\uparrow$')
 axes[1].set_ylim(50, 67)
 
 axes[2].bar(x[0], y[2,0], yerr=err[2,0], error_kw=err_attr, width=bar_width, alpha=0.8, label='CLIC', 
@@ -67,7 +68,7 @@ axes[2].bar(x[4], y[2,4], yerr=err[2,4], error_kw=err_attr, width=bar_width, alp
 axes[2].bar(x[5], y[2,5], yerr=err[2,5], error_kw=err_attr, width=bar_width, alpha=0.8, label='PCL')
 axes[2].set_xticks([])
 axes[2].set_yticks([80, 85, 90])
-axes[2].set_title('TNR')
+axes[2].set_title(r'TNR(%)$\uparrow$')
 axes[2].set_ylim(80, 93)
 
 axes[3].bar(x[0], y[3,0], yerr=err[3,0], error_kw=err_attr, width=bar_width, alpha=0.8, label='CLIC', 
@@ -80,8 +81,10 @@ axes[3].bar(x[5], y[3,5], yerr=err[3,5], error_kw=err_attr, width=bar_width, alp
 axes[3].plot([-0.7,5.7], [0.301,0.301], '--', color='black', linewidth=1, label='before training')
 axes[3].set_xticks([])
 axes[3].set_yticks([0.1, 0.15, 0.2, 0.25, 0.3])
-axes[3].set_title('CPS')
+axes[3].set_title(r'CPS(s$^{-1}$)$\downarrow$')
 axes[3].set_ylim(0.1, 0.32)
+axes[3].yaxis.set_major_formatter(ScalarFormatter(useMathText=True, useOffset=False))
+axes[3].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
 axes[4].bar(x[0], y[4,0], yerr=err[4,0], error_kw=err_attr, width=bar_width, alpha=0.8, label='CLIC', 
             edgecolor='black', linewidth=2, zorder=2)
@@ -93,11 +96,11 @@ axes[4].bar(x[5], y[4,5], yerr=err[4,5], error_kw=err_attr, width=bar_width, alp
 axes[4].plot([-0.7,5.7], [0.0112,0.0112], '--', color='black', linewidth=1, label='before training')
 axes[4].set_xticks([])
 axes[4].set_yticks([0.004, 0.006, 0.008, 0.01, 0.012])
-axes[4].set_title('CPM')
+axes[4].set_title(r'CPM(m$^{-1}$)$\downarrow$')
 axes[4].set_ylim(0.004, 0.012)
 axes[4].yaxis.set_major_formatter(ScalarFormatter(useMathText=True, useOffset=False))
 axes[4].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-axes[4].yaxis.get_offset_text().set_x(0)
+# axes[4].yaxis.get_offset_text().set_x(0)
 # axes[4].yaxis.get_offset_text().set_y(-0.5)
 
 lg = axes[0].legend(bbox_to_anchor=(2.8, -0.05), loc='upper center', ncol=7)

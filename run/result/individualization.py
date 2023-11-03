@@ -7,9 +7,9 @@ from tqdm import trange
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
+from matplotlib import rcParams
+rcParams['pdf.fonttype'] = 42
+rcParams['ps.fonttype'] = 42
 
 from utils.scenario_lib import scenario_lib
 from utils.predictor import predictor_dnn
