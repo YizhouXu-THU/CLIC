@@ -95,7 +95,7 @@ If you are using CLIC framework or code for your project development, please cit
 @article{niu2023continual,
   title={Continual Driving Policy Optimization with Closed-Loop Individualized Curricula},
   author={Niu, Haoyi and Xu, Yizhou and Jiang, Xingjian and Hu, Jianming},
-  journal={arXiv preprint arXiv:2309.14209},
+  journal={NeurIPS Machine Learning for Autonomous Driving Symposium},
   year={2023}
 }
 ```
