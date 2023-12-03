@@ -34,7 +34,7 @@ use_wandb = True
 sumo_gui = False
 save_model = True
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-random_seed = 92    # 14, 42, 51, 71, 92
+random_seed = 42    # 14, 42, 51, 71, 92
 name = datetime.now().strftime('%Y%m%d-%H%M')+'-pretrain-seed='+str(random_seed)    # for example: '20230509-1544-pretrain-seed=42'
 set_random_seed(random_seed)
 

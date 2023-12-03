@@ -105,9 +105,9 @@ class scenario_lib:
 
         Return an array of index. 
         """
-        # labels = np.stack((np.arange(self.total_num), self.labels))
+        # labels = np.stack((np.arange(self.scenario_num), self.labels))
         # labels = labels[:, np.argsort(labels[1])]   # sort by label
-        # step = math.floor(self.total_num / (size-1))
+        # step = math.floor(self.scenario_num / (size-1))
         # index = labels[0, ::step].astype(int)
         # return index
         self.labels += 1e-6

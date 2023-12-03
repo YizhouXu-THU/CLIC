@@ -78,7 +78,7 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
         vel: The arithmetic mean of the absolute value of AV velocity at each timestep. \n
         acc: The arithmetic mean of the absolute value of AV acceleration at each timestep. \n
         jerk: The arithmetic mean of the absolute value of AV jerk at each timestep. \n
-        yaw_vel: The arithmetic mean of the absolute value of AV yaw velocity at each timestep. \n
+        ang_vel: The arithmetic mean of the absolute value of AV angular velocity at each timestep. \n
         lateral_acc: The arithmetic mean of the absolute value of AV lateral acceleration at each timestep. 
         
         success_vel: The arithmetic mean of the absolute value of AV velocity at each timestep in successful scenarios. 
@@ -88,7 +88,7 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
     scenario_num = scenarios.shape[0]
     labels = np.zeros(scenario_num)
     if need_metrics:
-        vels, accs, jerks, yaw_vels, lateral_accs, success_vel = \
+        vels, accs, jerks, ang_vels, lateral_accs, success_vel = \
                         np.empty((0)), np.empty((0)), np.empty((0)), np.empty((0)), np.empty((0)), np.empty((0))
         total_time, total_dist = 0.0, 0.0
     # print('    evaluating...')
@@ -124,13 +124,13 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
                 vel, yaw = np.array(vel), np.array(yaw)
                 acc = np.diff(vel) / env.delta_t
                 jerk = np.diff(acc) / env.delta_t
-                yaw_vel = np.diff(yaw) / env.delta_t
-                lateral_acc = vel[1:] * yaw_vel
+                ang_vel = np.diff(yaw) / env.delta_t
+                lateral_acc = vel[1:] * ang_vel
                 
                 vels = np.concatenate((vels, np.abs(vel)))
                 accs = np.concatenate((accs, np.abs(acc)))
                 jerks = np.concatenate((jerks, np.abs(jerk)))
-                yaw_vels = np.concatenate((yaw_vels, np.abs(yaw_vel)))
+                ang_vels = np.concatenate((ang_vels, np.abs(ang_vel)))
                 lateral_accs = np.concatenate((lateral_accs, np.abs(lateral_acc)))
                 if info == 'succeed':
                     success_vel = np.concatenate((success_vel, np.abs(vel)))
@@ -145,7 +145,7 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
         vel = np.mean(vels)
         acc = np.mean(accs)
         jerk = np.mean(jerks)
-        yaw_vel = np.mean(yaw_vels)
+        ang_vel = np.mean(ang_vels)
         lateral_acc = np.mean(lateral_accs)
         success_vel = np.mean(success_vel)
         
@@ -156,7 +156,7 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
             vel=vel, 
             acc=acc, 
             jerk=jerk, 
-            yaw_vel=yaw_vel, 
+            ang_vel=ang_vel, 
             lateral_acc=lateral_acc, 
             success_vel=success_vel, 
         )
@@ -590,10 +590,10 @@ def matrix_test(predictor_params: list, policy_net_params: list,
     results = np.zeros((len(policy_net_params), len(predictor_params)))
     # matrix test and get results
     for i, policy_net_param in enumerate(policy_net_params):
-        av_model.policy_net.load_state_dict(policy_net_param, map_location=device)
+        av_model.policy_net.load_state_dict(policy_net_param)
         
         for j, predictor_param in enumerate(predictor_params):
-            predictor.load_state_dict(predictor_param, map_location=device)
+            predictor.load_state_dict(predictor_param)
             
             scenario_lib.labeling(predictor)
             index = scenario_lib.select(size=test_size)

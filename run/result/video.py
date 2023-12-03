@@ -16,7 +16,7 @@ from utils.function import set_random_seed, evaluate
 sumo_gui = True
 delay = 1000
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-random_seed = 92    # 14, 42, 51, 71, 92
+random_seed = 42    # 14, 42, 51, 71, 92
 name_CL = '20230906-2231-fixed_alpha=0.1-seed=' + str(random_seed)
 name_simple = '20230819-0150-simple-seed=' + str(random_seed)
 name_individualization = '20230920-0054-individualization-seed=' + str(random_seed)

@@ -7,9 +7,9 @@ from tqdm import trange
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
-rcParams['pdf.fonttype'] = 42
-rcParams['ps.fonttype'] = 42
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 from utils.scenario_lib import scenario_lib
 from utils.predictor import predictor_dnn
@@ -22,7 +22,7 @@ eval_size = 4096
 train_size = 4096
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-random_seed = 92    # 14, 42, 51, 71, 92
+random_seed = 42    # 14, 42, 51, 71, 92
 name = './model/20230906-2231-fixed_alpha=0.1-seed='+str(random_seed)+'/round10_policy.pth'
 set_random_seed(random_seed)
 
@@ -111,6 +111,6 @@ plt.bar(bin_centers, hist_defect, width=4, alpha=0.5, label='with defect')
 plt.bar(bin_centers, hist, width=4, alpha=0.5, label='without defect')
 plt.xlabel('Distance')
 plt.legend()
-plt.savefig('./figure/bv_dis.pdf', bbox_inches='tight')
+plt.savefig('./figure/individualization.pdf', bbox_inches='tight')
 
 env.close()
