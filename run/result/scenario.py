@@ -14,6 +14,7 @@ rcParams['ps.fonttype'] = 42
 
 from utils.scenario_lib import scenario_lib
 
+random_seed = 42
 lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
 
 delta_t = 0.04
@@ -37,9 +38,6 @@ for i in trange(lib.scenario_num):
                     bv_bv_dis.append(sqrt((scenario[1 + t * bv_num + j, 2] - scenario[1 + t * bv_num + k, 2]) ** 2 + 
                                           (scenario[1 + t * bv_num + j, 3] - scenario[1 + t * bv_num + k, 3]) ** 2))
 
-index = random.sample(range(len(bv_av_pos_x)), 2000)
-bv_av_pos_x = [bv_av_pos_x[i] for i in index]
-bv_av_pos_y = [bv_av_pos_y[i] for i in index]
 
 plt.figure(figsize=(4, 3))
 plt.hist(np.array(bv_bv_dis, dtype=np.float16), bins=50, alpha=0.8, density=True)
@@ -54,9 +52,13 @@ plt.xlabel('distance(m)')
 plt.xlim(-8, 175)
 plt.savefig('./figure/bv_av_dis.pdf', bbox_inches='tight')
 
-plt.figure(figsize=(10, 1.5))
+random.seed(random_seed)
+index = random.sample(range(len(bv_av_pos_x)), 2000)
+bv_av_pos_x = [bv_av_pos_x[i] for i in index]
+bv_av_pos_y = [bv_av_pos_y[i] for i in index]
+plt.figure(figsize=(9, 1.4))
 plt.scatter(np.array(bv_av_pos_x, dtype=np.float16), np.array(bv_av_pos_y, dtype=np.float16), 
-            s=0.8, alpha=0.5, label='BV')
+            s=2, alpha=0.5, label='BV')
 plt.scatter(0, 0, s=20, c='r', label='AV')
 plt.grid()
 plt.legend()
