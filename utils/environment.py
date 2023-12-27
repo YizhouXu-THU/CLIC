@@ -1,6 +1,7 @@
 import os
 import sys
 import math
+from shapely.geometry import Polygon
 import numpy as np
 import traci
 from sumolib import checkBinary
@@ -125,7 +126,7 @@ class Env:
     def get_state(self) -> np.ndarray:
         """
         Return an array of shape (4 * (1 + max_bv_num), ), 
-        which is flattened from an array with shape (bv_num + 1, 4), 
+        which is flattened from an array with shape (1 + max_bv_num, 4), 
         where 4 columns represents x_pos, y_pos, speed, and yaw respectively. 
         
         The position of BV is the relative position to AV.
@@ -139,12 +140,12 @@ class Env:
         
         av_state = np.concatenate((self.av_pos, self.av_vel)).reshape((1, -1))
         bv_state = np.concatenate((bv_rel_dis, self.bv_vel), axis=1)
-        state = np.concatenate((av_state, bv_state), axis=0)    # shapes (bv_num+1, 4)
-        state = state.reshape(-1)   # flatten
+        state = np.concatenate((av_state, bv_state), axis=0)    # shapes (1+bv_num, 4)
         
-        # add 0 to the maximum dimension at the end of the state
-        zero_num = (self.max_bv_num - self.bv_num) * 4
-        state = np.concatenate((state, np.zeros(zero_num)))
+        # add invalid states to the maximum dimension at the end of the state
+        empty_num = self.max_bv_num - self.bv_num
+        state = np.block([[state], [1000 * np.ones((empty_num, 2)), np.zeros((empty_num, 2))]])
+        state = state.reshape(-1)   # flatten
         
         return state
     
@@ -222,19 +223,24 @@ class Env:
     
     def accident_detect(self) -> bool:
         """
-        Lane detect: Detect if the AV has driven out of the road boundary. 
+        ## Lane detect
+        Detect if the AV has driven out of the road boundary. 
         
         Detection principle: 
         Calculate the minimum and maximum values of the y coordinates of AV's four vertices 
         and compare them with the range of the road. 
         
-        Collision detect: Detect if the AV has collided with BV. 
+        ## Collision detect
+        Detect if the AV has collided with BV. 
         
         Detection Principle: 
         Determine whether line segments intersect through vector cross multiplication, 
         and then determine whether two vehicles have collided. 
         Reference: https://blog.csdn.net/m0_37660632/article/details/123925503
+        #### Update: 
+        Directly call the Shapely library for judgment. 
         
+        ## Return
         If an accident occurs, return FALSE; else return TRUE. 
         """
         # calculate the vertex coordinates of each vehicle
@@ -272,38 +278,44 @@ class Env:
         if (np.max(av_vertex[:,1]) > road_edge[1]) or (np.min(av_vertex[:,1]) < road_edge[0]):
             return False
         
-        def xmult(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray) -> np.ndarray:
-            """Finding the cross product of two-dimensional vector ab and vector cd. """
-            vectorAx = b[0] - a[0]
-            vectorAy = b[1] - a[1]
-            vectorBx = d[0] - c[0]
-            vectorBy = d[1] - c[1]
-            return (vectorAx * vectorBy - vectorAy * vectorBx)
-        
         # collision detect
+        # def xmult(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray) -> np.ndarray:
+        #     """Finding the cross product of two-dimensional vector ab and vector cd. """
+        #     vectorAx = b[0] - a[0]
+        #     vectorAy = b[1] - a[1]
+        #     vectorBx = d[0] - c[0]
+        #     vectorBy = d[1] - c[1]
+        #     return (vectorAx * vectorBy - vectorAy * vectorBx)
+        
+        # for i in range(self.bv_num):
+        #     for p in range(4):
+        #         c, d = av_vertex[p-1], av_vertex[p]
+        #         for q in range(4):
+        #             a, b = bv_vertex[i, q-1], bv_vertex[i, q]
+        #             if (xmult(c,d,c,a) * xmult(c,d,c,b) < 0) and (xmult(a,b,a,c) * xmult(a,b,a,d) < 0):
+        #                 return False
+        
+        av_rectangle = Polygon(av_vertex)
         for i in range(self.bv_num):
-            for p in range(4):
-                c, d = av_vertex[p-1], av_vertex[p]
-                for q in range(4):
-                    a, b = bv_vertex[i, q-1], bv_vertex[i, q]
-                    if (xmult(c,d,c,a) * xmult(c,d,c,b) < 0) and (xmult(a,b,a,c) * xmult(a,b,a,d) < 0):
-                        return False
+            bv_rectangle = Polygon(bv_vertex[i])
+            if av_rectangle.intersects(bv_rectangle):
+                return False
         
         return True
     
     def get_reward(self, reward_type: str, no_accident: bool) -> float:
         if reward_type == 'r0':
             r_col = 0 if no_accident else -40
-            r_speed = 0.8 * (2 * self.av_vel[0] - self.av_max_speed) / self.av_max_speed
+            r_vel = 0.8 * (2 * self.av_vel[0] - self.av_max_speed) / self.av_max_speed
             r_yaw = -abs(self.av_vel[1]) / (np.pi / 6)
-            reward = r_col + r_speed + r_yaw
+            reward = r_col + r_vel + r_yaw
         elif reward_type == 'r1':
             r_col = 0 if no_accident else -40
-            r_speed = 5 * self.av_vel[0] / self.av_max_speed
-            if r_speed > 5:
-                r_speed = 10 - r_speed
+            r_vel = 5 * self.av_vel[0] / self.av_max_speed
+            if r_vel > 5:
+                r_vel = 10 - r_vel
             r_yaw = -0.5 * ((self.av_vel[1]) ** 2)
-            reward = r_col + r_speed + r_yaw
+            reward = r_col + r_vel + r_yaw
         elif reward_type == 'r2':
             r_col = 0 if no_accident else -40
             
@@ -332,7 +344,7 @@ class Env:
             reward = r_col + r_v + r_y + r_x
         elif reward_type == 'r3':
             r_col = 0 if no_accident else -40
-            r_speed = 0.8 * (2 * self.av_vel[0] - self.av_max_speed) / self.av_max_speed
+            r_vel = 0.8 * (2 * self.av_vel[0] - self.av_max_speed) / self.av_max_speed
             r_yaw = -abs(self.av_vel[1]) / (np.pi / 6)
             
             dis = traci.lane.getLength('lane0') * np.ones(3)
@@ -348,7 +360,7 @@ class Env:
             av_lane = int(self.av_pos[1] / width)
             r_lane = 2 if av_lane in best_lane else 0
             
-            reward = r_col + r_speed + r_yaw + r_lane
+            reward = r_col + r_vel + r_yaw + r_lane
         
         return reward
     

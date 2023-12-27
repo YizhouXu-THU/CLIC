@@ -1,10 +1,9 @@
 import os
 import math
-from tqdm import tqdm
+from tqdm import tqdm, trange
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-import torch.nn.functional as F
 
 
 class scenario_lib:
@@ -21,9 +20,9 @@ class scenario_lib:
     
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
-        if os.path.exists(self.npy_path):   # load from .npy file
+        if (isinstance(self.npy_path, str)) and (os.path.exists(self.npy_path)):    # load from NPY file
             data = np.load(self.npy_path)
-            data = data[:, :-1]     # the last column is the predicted labels and is not needed here
+            data = data[:, :-1]     # the last column is the predicted labels, which is not required here
             self.max_timestep = int(np.max(data[:, ::6]))
             for subpath in os.listdir(self.path):
                 bv_num = int(subpath[-1])
@@ -32,7 +31,7 @@ class scenario_lib:
                 for filename in os.listdir(self.path+subpath):
                     n += 1
                 self.type_count[bv_num] = n
-        else:   # load from original .csv files
+        else:   # load from original CSV files
             data_dict = {}
             for subpath in os.listdir(self.path):
                 bv_num = int(subpath[-1])
@@ -53,27 +52,29 @@ class scenario_lib:
             for _, value in data:
                 data_list.extend(value)
             data = self.fill_zero(data_list)
-        self.max_timestep += 1  # starting from 0
+        self.max_timestep += 1  # starting from 0, so the number of frames should + 1
         return data
     
     def fill_zero(self, data: list[np.ndarray]) -> np.ndarray:
         """
-        Fill 0 in the vacant part of other scenarios based on the largest dimension of all input scenarios. 
+        Fill 0 in the vacant part of other scenarios by timestep based on the largest dimension of all scenarios. 
 
         Return an array of scenarios filled with 0 on the input scenarios. 
         Each scenario is flattened into one dimension. 
         So the shape of each scenario is (max_dim,), and the shape of the whole array is (scenario_num, max_dim).
         """
-        r_max = 0
-        for i in range(len(data)):
-            r = data[i].shape[0]
-            if r > r_max:
-                r_max = r
-        
-        for i in range(len(data)):
-            r = data[i].shape[0]
-            data[i] = np.pad(data[i], ((0,r_max-r),(0,0)), 'constant', constant_values=(0,0)).flatten()
-        return np.array(data)
+        new_data = []
+        for i in trange(len(data)):
+            scenario = data[i]
+            timestep = int(np.max(scenario[:, 0]))
+            bv_num = int(np.max(scenario[:, 1]))
+            new_scenario = np.zeros(((1 + self.max_bv_num * (self.max_timestep+1)), 6))
+            new_scenario[0] = data[i][0]
+            for j in range(timestep+1):
+                for k in range(bv_num):
+                    new_scenario[j*self.max_bv_num+k+1] = scenario[j*bv_num+k+1]
+            new_data.append(new_scenario.flatten())
+        return np.array(new_data)
 
     def sample(self, size: int) -> np.ndarray:
         """

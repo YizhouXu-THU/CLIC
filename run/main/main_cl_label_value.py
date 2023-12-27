@@ -104,7 +104,7 @@ print('    Evaluation time: %.1fs' % (t4-t3))
 
 # Train reward predictor
 train_predictor(predictor, X_train, y_train, epochs=epochs, lr=learning_rate, 
-                batch_size=batch_size, wandb_logger=wandb_logger, device=device)
+                batch_size=batch_size, wandb_logger=None, device=device)
 t5 = time.time()
 print('    Training reward predictor time: %.1fs' % (t5-t4))
 

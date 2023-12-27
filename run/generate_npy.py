@@ -9,11 +9,13 @@ import torch
 from utils.scenario_lib import scenario_lib
 from utils.environment import Env
 from utils.av_policy import RL_brain
-from utils.function import evaluate
+from utils.function import set_random_seed, evaluate
 
 
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+random_seed = 42
+set_random_seed(random_seed)
 
 lib = scenario_lib(path='./data/all/', npy_path='')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)

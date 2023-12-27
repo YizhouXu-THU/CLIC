@@ -61,7 +61,7 @@ def process_state(state: np.ndarray) -> np.ndarray:
     state = state.reshape(-1, 4)
     for i in range(1, state.shape[0]):
         if (state[i, 0] > 0) and (state[i, 1] > 0):
-            state[i, 0], state[i, 1] = 100, 100     # unable to perceive the vehicle ahead on the left
+            state[i, 0], state[i, 1] = 1000.0, 1000.0   # unable to perceive the vehicle ahead on the left
     return state.reshape(-1)
 
 def scenario_statistics(scenarios: np.ndarray) -> tuple[float, list[float]]:
@@ -116,6 +116,7 @@ plt.figure(figsize=(6, 3))
 plt.bar(bin_centers, hist_defect, width=4, alpha=0.5, label='with defect')
 plt.bar(bin_centers, hist, width=4, alpha=0.5, label='without defect')
 plt.xlabel('Distance')
+plt.ylabel('Frequency')
 plt.legend()
 plt.savefig('./figure/individualization_bv_av_dis.pdf', bbox_inches='tight')
 
@@ -125,10 +126,10 @@ bv_av_pos_y = [bv_av_pos_y[i] for i in index]
 bv_av_pos_x_defect = [bv_av_pos_x_defect[i] for i in index]
 bv_av_pos_y_defect = [bv_av_pos_y_defect[i] for i in index]
 plt.figure(figsize=(9, 2))
-plt.scatter(np.array(bv_av_pos_x_defect, dtype=np.float16), np.array(bv_av_pos_y_defect, dtype=np.float16),
-            s=2, alpha=0.4, label='with defect')
 plt.scatter(np.array(bv_av_pos_x, dtype=np.float16), np.array(bv_av_pos_y, dtype=np.float16),
             s=2, alpha=0.4, label='without defect')
+plt.scatter(np.array(bv_av_pos_x_defect, dtype=np.float16), np.array(bv_av_pos_y_defect, dtype=np.float16),
+            s=2, alpha=0.4, label='with defect')
 plt.scatter(0, 0, s=20, c='r', label='AV')
 plt.grid()
 plt.legend()

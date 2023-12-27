@@ -115,7 +115,7 @@ for round in range(rounds):
 
     # 3. Train reward predictor
     train_predictor(predictor, X_train, y_train, epochs=epochs, lr=learning_rate, 
-                    batch_size=batch_size, wandb_logger=wandb_logger, device=device)
+                    batch_size=batch_size, wandb_logger=None, device=device)
     predictor_params.append(deepcopy(predictor.state_dict()))
     if save_model:
         torch.save(predictor.state_dict(), './model/'+name+'/round'+str(round+1)+'_predictor.pth')

@@ -70,15 +70,15 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
     """
     Return the metrics of the AV model in the given scenarios. 
     
-    metrics: \n
-        sr: Success rate. \n
-        cps: Average collision frequency per second. \n
+    metrics: 
+        sr: Success rate. 
+        cps: Average collision frequency per second. 
         cpm: Average collision frequency per meter. 
         
-        vel: The arithmetic mean of the absolute value of AV velocity at each timestep. \n
-        acc: The arithmetic mean of the absolute value of AV acceleration at each timestep. \n
-        jerk: The arithmetic mean of the absolute value of AV jerk at each timestep. \n
-        ang_vel: The arithmetic mean of the absolute value of AV angular velocity at each timestep. \n
+        vel: The arithmetic mean of the absolute value of AV velocity at each timestep. 
+        acc: The arithmetic mean of the absolute value of AV acceleration at each timestep. 
+        jerk: The arithmetic mean of the absolute value of AV jerk at each timestep. 
+        ang_vel: The arithmetic mean of the absolute value of AV angular velocity at each timestep. 
         lateral_acc: The arithmetic mean of the absolute value of AV lateral acceleration at each timestep. 
         
         success_vel: The arithmetic mean of the absolute value of AV velocity at each timestep in successful scenarios. 
@@ -214,8 +214,8 @@ def train_predictor(predictor,
         total_loss /= batch_num
         print('    Epoch:', epoch+1, ' train loss: %.4f' % total_loss)
         
-        # if wandb_logger is not None:
-        #     wandb_logger.log({'Predictor loss': total_loss})
+        if wandb_logger is not None:
+            wandb_logger.log({'Predictor loss': total_loss})
 
 
 def train_validate_predictor(predictor, 
@@ -275,11 +275,11 @@ def train_validate_predictor(predictor,
         accuracy = total_correct / train_size
         print('Epoch:', epoch+1, ' train loss: %.4f' % total_loss, ' train accuracy: %.4f' % accuracy, end='    ')
         
-        # if wandb_logger is not None:
-        #     wandb_logger.log({
-        #         'Predictor train loss': total_loss, 
-        #         'Predictor train accuracy': accuracy, 
-        #         })
+        if wandb_logger is not None:
+            wandb_logger.log({
+                'Predictor train loss': total_loss, 
+                'Predictor train accuracy': accuracy, 
+                })
         
         # validate
         with torch.no_grad():
@@ -293,11 +293,11 @@ def train_validate_predictor(predictor,
         accuracy = sum(y_pred == y_valid) / valid_size
         print('test loss: %.4f' % bce_loss.item(), ' test accuracy: %.4f' % accuracy)
         
-        # if wandb_logger is not None:
-        #     wandb_logger.log({
-        #         'Predictor valid loss': loss.item(), 
-        #         'Predictor valid accuracy': accuracy, 
-        #         })
+        if wandb_logger is not None:
+            wandb_logger.log({
+                'Predictor valid loss': loss.item(), 
+                'Predictor valid accuracy': accuracy, 
+                })
 
 
 def train_predictor_vae(predictor, 
@@ -340,8 +340,8 @@ def train_predictor_vae(predictor,
             #   ' train total loss: %.4f' % total_loss, 
               ' train classification loss: %.4f' % total_class_loss)
         
-        # if wandb_logger is not None:
-        #     wandb_logger.log({'Predictor loss': total_loss})
+        if wandb_logger is not None:
+            wandb_logger.log({'Predictor loss': total_loss})
 
 
 def train_validate_predictor_vae(predictor, 
@@ -391,6 +391,12 @@ def train_validate_predictor_vae(predictor,
               ' train classification loss: %.4f' % total_class_loss, 
               end='')
         
+        if wandb_logger is not None:
+            wandb_logger.log({
+                'Predictor train loss': total_loss, 
+                'Predictor train classification loss': total_class_loss, 
+                })
+        
         # validate
         with torch.no_grad():
             predictor.eval()
@@ -404,6 +410,12 @@ def train_validate_predictor_vae(predictor,
         print('    ', 
             #   'test loss: %.4f' % loss.item(), 
               'test classification loss: %.4f' % test_class_loss.item())
+        
+        if wandb_logger is not None:
+            wandb_logger.log({
+                'Predictor valid loss': loss.item(), 
+                'Predictor valid classification loss': test_class_loss.item(), 
+                })
 
 
 def train_av_online(av_model, env, scenarios: np.ndarray, 
@@ -501,10 +513,10 @@ def train_av_offline(av_model, env, scenarios: np.ndarray,
             if info == 'succeed':
                 success_count += 1
             # print('        Episode:', episode+1, ' Scenario:', i, ' Reward: %.3f ' % scenario_reward, info)
-            # if wandb_logger is not None:
-            #     wandb_logger.log({
-            #         'scenario_reward': scenario_reward, 
-            #         })
+            if wandb_logger is not None:
+                wandb_logger.log({
+                    'scenario_reward': scenario_reward, 
+                    })
             total_reward += scenario_reward
         
         success_rate = success_count / scenario_num
