@@ -21,8 +21,8 @@ random_seed = 42  # 14, 42, 51, 71, 92
 name = datetime.now().strftime('%Y%m%d-%H%M')+'-test_SR-seed='+str(random_seed)     # for example: '20230509-1544-test_SR-seed=42'
 set_random_seed(random_seed)
 
-all_lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
-crash_lib = scenario_lib(path='./data/crash/', npy_path='./data/crash.npy')
+all_lib = scenario_lib(path='./data/all.npz')
+crash_lib = scenario_lib(path='./data/crash.npz')
 env = Env(max_bv_num=all_lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=0, device=device)
 if use_wandb:

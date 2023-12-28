@@ -15,7 +15,7 @@ rcParams['ps.fonttype'] = 42
 from utils.scenario_lib import scenario_lib
 
 random_seed = 42
-lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+lib = scenario_lib(path='./data/all.npz')
 
 delta_t = 0.04
 bv_bv_dis, bv_av_dis, bv_av_pos_x, bv_av_pos_y, bv_yaw, bv_vel, bv_acc = [], [], [], [], [], [], []

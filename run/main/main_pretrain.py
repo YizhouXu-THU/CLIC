@@ -38,7 +38,7 @@ random_seed = 42    # 14, 42, 51, 71, 92
 name = datetime.now().strftime('%Y%m%d-%H%M')+'-pretrain-seed='+str(random_seed)    # for example: '20230509-1544-pretrain-seed=42'
 set_random_seed(random_seed)
 
-lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+lib = scenario_lib(path='./data/all.npz')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, 
           reward_type=reward_type, bv_control='sumo', seed=random_seed)
 av_model = RL_brain(env, capacity=train_size*lib.max_timestep, device=device, 

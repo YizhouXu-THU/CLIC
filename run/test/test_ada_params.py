@@ -9,7 +9,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import GridSearchCV
 
 
-all_data = np.load('./all_data.npy')
+all_data = np.load('./all_data.npz')['data']
 X_train = all_data[:, :-1]
 y_train = all_data[:, -1].reshape(-1)
 n_estimators = [300, 350, 360, 370, 800]

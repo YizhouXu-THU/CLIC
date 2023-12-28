@@ -38,7 +38,7 @@ random_seed = 42    # 14, 42, 51, 71, 92
 name = datetime.now().strftime('%Y%m%d-%H%M')+'-CL_label_value-seed='+str(random_seed)   # for example: '20230509-1544-CL_bv_num-seed=42'
 set_random_seed(random_seed)
 
-lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+lib = scenario_lib(path='./data/all.npz')
 predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
 predictor.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, 
@@ -114,7 +114,7 @@ t6 = time.time()
 print('    Labeling time: %.1fs' % (t6-t5))
 
 # sort all scenarios by label value from smallest to largest
-sorted_data = np.load('./data/all.npy')
+sorted_data = np.load('./data/all.npz')['data']
 sorted_data = sorted_data[:, :-1]
 index = np.argsort(lib.labels)
 sorted_data = sorted_data[index]

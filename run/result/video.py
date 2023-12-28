@@ -22,7 +22,7 @@ name_simple = '20230819-0150-simple-seed=' + str(random_seed)
 name_individualization = '20230920-0054-individualization-seed=' + str(random_seed)
 set_random_seed(random_seed)
 
-lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+lib = scenario_lib(path='./data/all.npz')
 predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
 predictor.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, delay=delay, seed=random_seed)

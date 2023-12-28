@@ -17,7 +17,7 @@ from utils.predictor import predictor_dnn
 np.random.seed(71)
 name = '20230826-0159-fixed_alpha=0.15-seed=71'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+lib = scenario_lib(path='./data/all.npz')
 predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
 predictor.to(device)
 sample_index = lib.sample(size=1024)

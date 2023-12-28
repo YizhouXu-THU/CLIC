@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, log_loss
 
 eval_size = 4096
-all_data = np.load('./data/all.npy')
+all_data = np.load('./data/all.npz')['data']
 X = all_data[:, :-1]
 y = all_data[:, -1].reshape(-1)
 total_num, max_dim = X.shape

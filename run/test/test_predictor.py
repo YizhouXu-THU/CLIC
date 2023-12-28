@@ -22,8 +22,8 @@ sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
-lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
-all_data = np.load('./data/all.npy')
+lib = scenario_lib(path='./data/all.npz')
+all_data = np.load('./data/all.npz')['data']
 X = all_data[:, :-1]
 y = all_data[:, -1].reshape(-1)
 total_num, max_dim = X.shape

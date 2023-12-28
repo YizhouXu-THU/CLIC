@@ -27,7 +27,7 @@ random_seed = 92    # 14, 42, 51, 71, 92
 name = './model/20230906-2231-fixed_alpha=0.1-seed='+str(random_seed)+'/round10_policy.pth'
 set_random_seed(random_seed)
 
-lib = scenario_lib(path='./data/all/', npy_path='./data/all.npy')
+lib = scenario_lib(path='./data/all.npz')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, seed=random_seed)
 av_model = RL_brain(env, device=device)
 av_model.policy_net.load_state_dict(torch.load(name, map_location=device))

@@ -94,8 +94,8 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
     # print('    evaluating...')
     
     with torch.no_grad():
-        # for i in trange(scenario_num):
         for i in range(scenario_num):
+        # for i in trange(scenario_num):
             vel, yaw = [], []
             state = env.reset(scenarios[i])
             done = False

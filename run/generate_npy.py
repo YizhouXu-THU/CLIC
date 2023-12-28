@@ -17,7 +17,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 random_seed = 42
 set_random_seed(random_seed)
 
-lib = scenario_lib(path='./data/all/', npy_path='')
+lib = scenario_lib(path='./data/example/')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui)
 av_model = RL_brain(env, capacity=0, device=device)
 
@@ -25,7 +25,8 @@ _, gt_label = evaluate(av_model, env, scenarios=lib.data)
 success_rate = 1 - np.sum(gt_label) / gt_label.size
 print('Success rate: %.4f' % success_rate)
 
-all_data = np.append(lib.data, gt_label.reshape(-1,1), axis=1)
-np.save('./data/all.npy', all_data)
+scenario_data = np.append(lib.data, gt_label.reshape(-1,1), axis=1)
+# np.save('./data/example.npy', scenario_data)
+np.savez('./data/example.npz', data=scenario_data, type_count=lib.type_count, max_bv_num=lib.max_bv_num)
 
 env.close()

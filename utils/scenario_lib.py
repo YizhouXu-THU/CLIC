@@ -7,9 +7,8 @@ import torch
 
 
 class scenario_lib:
-    def __init__(self, path='./data/all/', npy_path='./data/all.npy') -> None:
+    def __init__(self, path='./data/all.npz') -> None:
         self.path = path
-        self.npy_path = npy_path
         self.max_bv_num = 0                         # initialize with 0
         self.max_timestep = 0                       # initialize with 0
         self.type_count = {}                        # count separately based on the number of BV
@@ -20,25 +19,33 @@ class scenario_lib:
     
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
-        if (isinstance(self.npy_path, str)) and (os.path.exists(self.npy_path)):    # load from NPY file
-            data = np.load(self.npy_path)
+        if (os.path.exists(self.path)) and (os.path.isfile(self.path)):
+            # load from NPY file
+            # data = np.load(self.path)
+            # data = data[:, :-1]     # the last column is the predicted labels, which is not required here
+            # self.max_timestep = int(np.max(data[:, ::6]))
+            # for subpath in os.listdir(self.path):
+            #     bv_num = int(subpath[-1])
+            #     self.max_bv_num = max(self.max_bv_num, bv_num)
+            #     n = 0
+            #     for filename in os.listdir(self.path+subpath):
+            #         n += 1
+            #     self.type_count[bv_num] = n
+            all_data = np.load(self.path, allow_pickle=True)
+            data = all_data['data']
             data = data[:, :-1]     # the last column is the predicted labels, which is not required here
             self.max_timestep = int(np.max(data[:, ::6]))
-            for subpath in os.listdir(self.path):
-                bv_num = int(subpath[-1])
-                self.max_bv_num = max(self.max_bv_num, bv_num)
-                n = 0
-                for filename in os.listdir(self.path+subpath):
-                    n += 1
-                self.type_count[bv_num] = n
-        else:   # load from original CSV files
+            self.type_count = all_data['type_count'].item()
+            self.max_bv_num = all_data['max_bv_num'].item()
+        elif (os.path.exists(self.path)) and (os.path.isdir(self.path)):
+            # load from original CSV files
             data_dict = {}
             for subpath in os.listdir(self.path):
                 bv_num = int(subpath[-1])
                 self.max_bv_num = max(self.max_bv_num, bv_num)
                 n = 0
-                for filename in os.listdir(self.path+subpath):
-                # for filename in tqdm(os.listdir(self.path+subpath), unit='file'):
+                # for filename in os.listdir(self.path+subpath):
+                for filename in tqdm(os.listdir(self.path+subpath), unit='file'):
                     scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
                     self.max_timestep = max(self.max_timestep, int(scenario[-1, 0]))
                     if n == 0:
