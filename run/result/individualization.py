@@ -61,7 +61,9 @@ def process_state(state: np.ndarray) -> np.ndarray:
     state = state.reshape(-1, 4)
     for i in range(1, state.shape[0]):
         if (state[i, 0] > 0) and (state[i, 1] > 0):
-            state[i, 0], state[i, 1] = 1000.0, 1000.0   # unable to perceive the vehicle ahead on the left
+            # unable to perceive the vehicle ahead on the left
+            state = np.delete(state, i, axis=0)
+            state = np.vstack((state, np.zeros(4)))
     return state.reshape(-1)
 
 def scenario_statistics(scenarios: np.ndarray) -> tuple[float, list[float]]:

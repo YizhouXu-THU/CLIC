@@ -25,7 +25,7 @@ auto_alpha = False
 use_wandb = False
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-random_seed = 42
+random_seed = 42    # 14, 42, 51, 71, 92
 name = datetime.now().strftime('%Y%m%d-%H%M')+'-test_av-seed='+str(random_seed) # for example: '20230509-1544-test_av-seed=42'
 set_random_seed(random_seed)
 

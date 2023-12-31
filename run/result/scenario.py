@@ -13,8 +13,10 @@ rcParams['pdf.fonttype'] = 42
 rcParams['ps.fonttype'] = 42
 
 from utils.scenario_lib import scenario_lib
+from utils.function import set_random_seed
 
-random_seed = 42
+random_seed = 42    # 14, 42, 51, 71, 92
+set_random_seed(random_seed)
 lib = scenario_lib(path='./data/all.npz')
 
 delta_t = 0.04
@@ -54,7 +56,6 @@ plt.ylabel('frequency')
 plt.xlim(-8, 175)
 plt.savefig('./figure/bv_av_dis.pdf', bbox_inches='tight')
 
-random.seed(random_seed)
 index = random.sample(range(len(bv_av_pos_x)), 2000)
 bv_av_pos_x = [bv_av_pos_x[i] for i in index]
 bv_av_pos_y = [bv_av_pos_y[i] for i in index]

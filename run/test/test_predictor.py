@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 from utils.scenario_lib import scenario_lib
 from utils.predictor import predictor_dnn, predictor_rnn, predictor_vae
-from utils.function import train_validate_predictor, train_validate_predictor_vae
+from utils.function import set_random_seed, train_validate_predictor, train_validate_predictor_vae
 
 
 # Prepare
@@ -20,6 +20,8 @@ epochs = 20
 learning_rate = 1e-4
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+random_seed = 42    # 14, 42, 51, 71, 92
+set_random_seed(random_seed)
 # print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
 lib = scenario_lib(path='./data/all.npz')

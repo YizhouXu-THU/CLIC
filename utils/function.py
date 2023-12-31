@@ -18,7 +18,7 @@ from utils.cql.SimpleSAC.utils import prefix_metrics
 def set_random_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    # np.random.seed(seed)
+    np.random.seed(seed)
     random.seed(seed)
 
 
@@ -187,7 +187,7 @@ def train_predictor(predictor,
         total_loss = 0.0
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
-        # np.random.shuffle(data_train)
+        np.random.shuffle(data_train)
         data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
         for iteration in range(batch_num):
@@ -243,7 +243,7 @@ def train_validate_predictor(predictor,
         total_correct = 0
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
-        # np.random.shuffle(data_train)
+        np.random.shuffle(data_train)
         data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
         for iteration in range(batch_num):
