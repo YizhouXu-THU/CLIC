@@ -144,7 +144,8 @@ class Env:
         
         # add invalid states to the maximum dimension at the end of the state
         empty_num = self.max_bv_num - self.bv_num
-        state = np.block([[state], [1000 * np.ones((empty_num, 2)), np.zeros((empty_num, 2))]])
+        # state = np.block([[state], [1000 * np.ones((empty_num, 2)), np.zeros((empty_num, 2))]])
+        state = np.block([[state], [np.zeros((empty_num, 4))]])
         state = state.reshape(-1)   # flatten
         
         return state

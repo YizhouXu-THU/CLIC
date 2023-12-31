@@ -37,7 +37,7 @@ sumo_gui = False
 save_model = True
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 random_seed = 42    # 14, 42, 51, 71, 92
-name = datetime.now().strftime('%Y%m%d-%H%M')+'-CL-seed='+str(random_seed)  # for example: '20230509-1544-CL-seed=42'
+name = datetime.now().strftime('%Y%m%d-%H%M')+'-CLIC-seed='+str(random_seed)    # for example: '20230509-1544-CLIC-seed=42'
 set_random_seed(random_seed)
 
 lib = scenario_lib(path='./data/all.npz')
@@ -71,7 +71,7 @@ if use_wandb:
         'seed': random_seed, 
         }
     wandb_logger = wandb.init(
-        project='CL for Autonomous Vehicle Training and Testing', 
+        project='CLIC', 
         name=name, 
         # entity='xyz_thu',
         config=wandb_config, 

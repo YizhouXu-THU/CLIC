@@ -16,7 +16,7 @@ use_wandb = True
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 random_seed = 42    # 14, 42, 51, 71, 92
-name = '20230819-0150-CL-seed=' + str(random_seed)
+name = '20230819-0150-CLIC-seed=' + str(random_seed)
 set_random_seed(random_seed)
 
 lib = scenario_lib(path='./data/all.npz')
@@ -27,7 +27,7 @@ av_model.policy_net.load_state_dict(torch.load('./model/'+name+'/round10_policy.
 if use_wandb:
     wandb_config = {'seed': random_seed}
     wandb_logger = wandb.init(
-        project='CL for Autonomous Vehicle Training and Testing', 
+        project='CLIC', 
         name=name+'-metrics', 
         # entity='xyz_thu',
         config=wandb_config, 

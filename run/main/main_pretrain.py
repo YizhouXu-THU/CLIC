@@ -66,7 +66,7 @@ if use_wandb:
         'seed': random_seed, 
         }
     wandb_logger = wandb.init(
-        project='CL for Autonomous Vehicle Training and Testing', 
+        project='CLIC', 
         name=name, 
         # entity='xyz_thu',
         config=wandb_config, 
