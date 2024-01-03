@@ -11,8 +11,8 @@ from torch.autograd import Variable
 from sklearn.metrics import confusion_matrix
 from scipy import interpolate
 
-from utils.cql.SimpleSAC.replay_buffer import batch_to_torch, subsample_batch
-from utils.cql.SimpleSAC.utils import prefix_metrics
+# from utils.cql.SimpleSAC.replay_buffer import batch_to_torch, subsample_batch
+# from utils.cql.SimpleSAC.utils import prefix_metrics
 
 
 def set_random_seed(seed):
@@ -553,18 +553,18 @@ def train_av_offline(av_model, env, scenarios: np.ndarray,
                         })
 
 
-def train_cql(av_model, env, scenarios: np.ndarray, FLAGS, wandb_logger) -> None:
-    """Training process of CQL reinforcement learning algorithm. """
-    dataset = make_dataset(av_model, env, scenarios, device=FLAGS.device)
-    for epoch in range(FLAGS.n_epochs):
-        metrics = {'epoch': epoch}
+# def train_cql(av_model, env, scenarios: np.ndarray, FLAGS, wandb_logger) -> None:
+#     """Training process of CQL reinforcement learning algorithm. """
+#     dataset = make_dataset(av_model, env, scenarios, device=FLAGS.device)
+#     for epoch in range(FLAGS.n_epochs):
+#         metrics = {'epoch': epoch}
 
-        for batch_idx in range(FLAGS.n_train_step_per_epoch):
-            batch = subsample_batch(dataset, FLAGS.batch_size)
-            batch = batch_to_torch(batch, FLAGS.device)
-            metrics.update(prefix_metrics(av_model.train(batch, bc=epoch < FLAGS.bc_epochs), 'sac'))
+#         for batch_idx in range(FLAGS.n_train_step_per_epoch):
+#             batch = subsample_batch(dataset, FLAGS.batch_size)
+#             batch = batch_to_torch(batch, FLAGS.device)
+#             metrics.update(prefix_metrics(av_model.train(batch, bc=epoch < FLAGS.bc_epochs), 'sac'))
 
-        wandb_logger.log(metrics)
+#         wandb_logger.log(metrics)
 
 
 def cm_result(label_before: np.ndarray, label_after: np.ndarray) -> None:
