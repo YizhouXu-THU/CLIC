@@ -15,11 +15,19 @@ from scipy import interpolate
 # from utils.cql.SimpleSAC.utils import prefix_metrics
 
 
-def set_random_seed(seed):
+def set_random_seed(seed: int) -> None:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
+
+
+def focal_loss(out: torch.Tensor, y: torch.Tensor, alpha=0.25, gamma=2.0) -> torch.Tensor:
+    """Focal loss for binary classification. """
+    bce_loss = nn.BCEWithLogitsLoss(reduction='none')(out, y)
+    pt = torch.exp(-bce_loss)
+    loss = alpha * (1 - pt) ** gamma * bce_loss
+    return loss.mean()
 
 
 def make_dataset(av_model, env, scenarios: np.ndarray, device='cuda') -> dict[str, np.ndarray]:
@@ -169,14 +177,13 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
 def train_predictor(predictor, 
                     X_train: np.ndarray, y_train: np.ndarray, 
                     epochs=20, lr=1e-4, batch_size=128, 
-                    gamma=2.0, alpha=0.25, 
                     wandb_logger=None, device='cuda') -> None:
     """
     Training process of supervised learning. \n
     No validation process, no calculation of hard labels. 
     """
     loss_function = nn.BCELoss()
-    # loss_function = nn.BCEWithLogitsLoss()
+    # loss_function = focal_loss
     optimizer = optim.Adam(predictor.parameters(), lr=lr)
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     total_size = y_train.size
@@ -202,9 +209,6 @@ def train_predictor(predictor,
             y = torch.tensor(y, dtype=torch.float32, device=device)
             
             out = predictor(X)
-            # bce_loss = loss_function(out, y)
-            # pt = torch.exp(-bce_loss)
-            # loss = alpha * (1 - pt) ** gamma * bce_loss
             loss = loss_function(out, y)
             total_loss += loss.item()
             optimizer.zero_grad()
@@ -222,14 +226,13 @@ def train_validate_predictor(predictor,
                              X_train: np.ndarray, y_train: np.ndarray, 
                              X_valid: np.ndarray, y_valid: np.ndarray, 
                              epochs=20, lr=1e-4, batch_size=128, 
-                             gamma=2.0, alpha=0.25, 
                              wandb_logger=None, device='cuda') -> None:
     """
     Training process of supervised learning. \n
     Including validation process, but still no calculation of hard labels. 
     """
     loss_function = nn.BCELoss()
-    # loss_function = nn.BCEWithLogitsLoss()
+    # loss_function = focal_loss
     optimizer = optim.Adam(predictor.parameters(), lr=lr)
     # optimizer = optim.SGD(predictor.parameters(), lr=lr, momentum=0.9)
     train_size = y_train.size
@@ -258,9 +261,6 @@ def train_validate_predictor(predictor,
             y = torch.tensor(y, dtype=torch.float32, device=device)
             
             out = predictor(X)
-            # bce_loss = loss_function(out, y)
-            # pt = torch.exp(-bce_loss)
-            # loss = alpha * (1 - pt) ** gamma * bce_loss
             loss = loss_function(out, y)
             total_loss += loss.item()
             optimizer.zero_grad()

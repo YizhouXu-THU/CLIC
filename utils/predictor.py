@@ -40,20 +40,21 @@ class predictor_dnn(nn.Module):
 
 
 class predictor_rnn(nn.Module):
-    def __init__(self, timestep: int, input_dim: int, hidden_dim=256, output_dim=2, device='cuda') -> None:
+    def __init__(self, timestep: int, input_dim: int, hidden_dim=256, output_dim=2, device='cuda', dropout=False) -> None:
         super().__init__()
         self.timestep = timestep
         self.hidden_dim = hidden_dim
         self.device = device
+        self.dropout = dropout
         self.embedding_h = nn.Linear(6, hidden_dim)
-        self.rnn = nn.RNN(int((input_dim-6)/timestep), hidden_dim, batch_first=True)
+        self.rnn = nn.RNN(int((input_dim-6)/timestep), hidden_dim, batch_first=True, dropout=0.2 if self.dropout else 0)
         self.fc = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         batch_size = x.shape[0]
-        x_h = x[:, 0:6]                                         # timestep = 0, AV state
-        x = x[:, 6:].reshape((batch_size, self.timestep, -1))   # timestep = 1 ~ max_timestep, BV state
-        h = self.embedding_h(x_h).unsqueeze(0)
+        x_h = x[:, 0:6]                                         # timestep = 0, AV state; shape: [batch_size, 6]
+        x = x[:, 6:].reshape((batch_size, self.timestep, -1))   # timestep = 0 ~ max_timestep, BV state; shape: [batch_size, timestep, max_bv_num*6]
+        h = self.embedding_h(x_h).unsqueeze(0)  # shape: [1, batch_size, hidden_dim]
         x, h = self.rnn(x, h)
         x = x[:, -1, :]
         output = self.fc(x)

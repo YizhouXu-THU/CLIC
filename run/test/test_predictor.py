@@ -12,7 +12,6 @@ from utils.predictor import predictor_dnn, predictor_rnn, predictor_vae
 from utils.function import set_random_seed, train_validate_predictor, train_validate_predictor_vae
 
 
-# Prepare
 eval_size = 4096
 batch_size = 128
 train_size = 128
