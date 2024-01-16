@@ -4,7 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 
 
-class predictor_dnn(nn.Module):
+class predictor_mlp(nn.Module):
     def __init__(self, input_dim: int, hidden_dim=256, output_dim=2, device='cuda', dropout=False) -> None:
         super().__init__()
         self.output_dim = output_dim
@@ -62,6 +62,30 @@ class predictor_rnn(nn.Module):
         return output
 
 
+class predictor_lstm(nn.Module):
+    def __init__(self, timestep: int, input_dim: int, hidden_dim=256, output_dim=2, device='cuda', dropout=False) -> None:
+        super().__init__()
+        self.timestep = timestep
+        self.hidden_dim = hidden_dim
+        self.device = device
+        self.dropout = dropout
+        self.embedding_h = nn.Linear(6, hidden_dim)
+        self.lstm = nn.LSTM(int((input_dim-6)/timestep), hidden_dim, batch_first=True, dropout=0.2 if self.dropout else 0)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        batch_size = x.shape[0]
+        x_h = x[:, 0:6]                                         # timestep = 0, AV state; shape: [batch_size, 6]
+        x = x[:, 6:].reshape((batch_size, self.timestep, -1))   # timestep = 0 ~ max_timestep, BV state; shape: [batch_size, timestep, max_bv_num*6]
+        h = self.embedding_h(x_h).unsqueeze(0)  # shape: [1, batch_size, hidden_dim]
+        c = torch.zeros_like(h)
+        x, (h, c) = self.lstm(x, (h, c))
+        x = x[:, -1, :]
+        output = self.fc(x)
+        output = F.softmax(output, dim=1)[:,1]
+        return output
+
+
 class predictor_vae(nn.Module):
     def __init__(self, input_dim: int, hidden_dim=(256,64,16), latent_dim=2, device='cuda') -> None:
         super().__init__()
@@ -95,16 +119,16 @@ class predictor_vae(nn.Module):
             nn.Sigmoid()
         )
     
-    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
-        std = torch.exp(0.5 * logvar)
+    def reparameterize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
+        std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
         z = mu + eps * std
         return z
     
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         encoded = self.encoder(x)
-        mu, logvar = torch.chunk(encoded, 2, dim=1)
-        z = self.reparameterize(mu, logvar)
+        mu, log_var = torch.chunk(encoded, 2, dim=1)
+        z = self.reparameterize(mu, log_var)
         decoded = self.decoder(z)
         output = self.classifier(z).squeeze()
-        return decoded, output, mu, logvar
+        return decoded, output, mu, log_var

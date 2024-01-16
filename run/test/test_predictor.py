@@ -8,7 +8,7 @@ import torch
 from sklearn.model_selection import train_test_split
 
 from utils.scenario_lib import scenario_lib
-from utils.predictor import predictor_dnn, predictor_rnn, predictor_vae
+from utils.predictor import predictor_mlp, predictor_rnn, predictor_lstm, predictor_vae
 from utils.function import set_random_seed, train_validate_predictor, train_validate_predictor_vae
 
 
@@ -31,8 +31,9 @@ total_num, max_dim = X.shape
 test_size = total_num - eval_size
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
 
-predictor = predictor_dnn(input_dim=max_dim, device=device)
+predictor = predictor_mlp(input_dim=max_dim, device=device)
 # predictor = predictor_rnn(timestep=lib.max_timestep, input_dim=max_dim, device=device)
+# predictor = predictor_lstm(timestep=lib.max_timestep, input_dim=max_dim, device=device)
 # predictor = predictor_vae(input_dim=max_dim, device=device)
 predictor.to(device)
 

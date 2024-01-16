@@ -195,16 +195,16 @@ def train_predictor(predictor,
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
         np.random.shuffle(data_train)
-        data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
+        # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
         for iteration in range(batch_num):
-            batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
-            batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
-            batch = np.concatenate((batch_pos, batch_neg), axis=0)
-            np.random.shuffle(batch)
-            X, y = batch[:, 0:-1], batch[:, -1]
-            # X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
-            # y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
+            # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
+            # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
+            # batch = np.concatenate((batch_pos, batch_neg), axis=0)
+            # np.random.shuffle(batch)
+            # X, y = batch[:, 0:-1], batch[:, -1]
+            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
+            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
             X = torch.tensor(X, dtype=torch.float32, device=device)
             y = torch.tensor(y, dtype=torch.float32, device=device)
             
@@ -247,16 +247,16 @@ def train_validate_predictor(predictor,
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
         np.random.shuffle(data_train)
-        data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
+        # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
         for iteration in range(batch_num):
-            batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
-            batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
-            batch = np.concatenate((batch_pos, batch_neg), axis=0)
-            np.random.shuffle(batch)
-            X, y = batch[:, 0:-1], batch[:, -1]
-            # X = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
-            # y = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
+            # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
+            # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
+            # batch = np.concatenate((batch_pos, batch_neg), axis=0)
+            # np.random.shuffle(batch)
+            # X, y = batch[:, 0:-1], batch[:, -1]
+            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
+            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
             X = torch.tensor(X, dtype=torch.float32, device=device)
             y = torch.tensor(y, dtype=torch.float32, device=device)
             
@@ -318,8 +318,14 @@ def train_predictor_vae(predictor,
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
         np.random.shuffle(data_train)
+        # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
         for iteration in range(batch_num):
+            # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
+            # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
+            # batch = np.concatenate((batch_pos, batch_neg), axis=0)
+            # np.random.shuffle(batch)
+            # X, y = batch[:, 0:-1], batch[:, -1]
             X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
             y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
             X = torch.tensor(X, dtype=torch.float32, device=device)
@@ -367,8 +373,14 @@ def train_validate_predictor_vae(predictor,
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
         np.random.shuffle(data_train)
+        # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
         for iteration in range(batch_num):
+            # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
+            # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
+            # batch = np.concatenate((batch_pos, batch_neg), axis=0)
+            # np.random.shuffle(batch)
+            # X, y = batch[:, 0:-1], batch[:, -1]
             X = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
             y = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
             X = torch.tensor(X, dtype=torch.float32, device=device)

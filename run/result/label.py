@@ -12,13 +12,13 @@ rcParams['pdf.fonttype'] = 42
 rcParams['ps.fonttype'] = 42
 
 from utils.scenario_lib import scenario_lib
-from utils.predictor import predictor_dnn
+from utils.predictor import predictor_mlp
 
 np.random.seed(71)
 name = '20230826-0159-fixed_alpha=0.15-seed=71'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 lib = scenario_lib(path='./data/all.npz')
-predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
+predictor = predictor_mlp(input_dim=lib.max_dim, device=device)
 predictor.to(device)
 sample_index = lib.sample(size=1024)
 bin_edges = np.linspace(0, 1, 21)

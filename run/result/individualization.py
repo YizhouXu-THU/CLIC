@@ -13,7 +13,7 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
 from utils.scenario_lib import scenario_lib
-from utils.predictor import predictor_dnn
+from utils.predictor import predictor_mlp
 from utils.environment import Env
 from utils.av_policy import RL_brain
 from utils.function import set_random_seed, evaluate, train_predictor
@@ -85,7 +85,7 @@ def scenario_statistics(scenarios: np.ndarray) -> tuple[float, list[float]]:
     return bv_interest_proportion, bv_interest_dis, bv_av_pos_x, bv_av_pos_y
 
 
-predictor_defect = predictor_dnn(input_dim=lib.max_dim, device=device)
+predictor_defect = predictor_mlp(input_dim=lib.max_dim, device=device)
 predictor_defect.to(device)
 y_train_defect = defect_evaluate(av_model, env, scenarios=X_train)
 success_rate_defect = 1 - np.sum(y_train_defect) / eval_size
@@ -98,7 +98,7 @@ bv_interest_proportion_defect, bv_dis_defect, bv_av_pos_x_defect, bv_av_pos_y_de
                 = scenario_statistics(train_scenario_defect)
 print('The proportion of BVs of interest:', bv_interest_proportion_defect)
 
-predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
+predictor = predictor_mlp(input_dim=lib.max_dim, device=device)
 predictor.to(device)
 _, y_train = evaluate(av_model, env, scenarios=X_train)
 success_rate = 1 - np.sum(y_train) / eval_size

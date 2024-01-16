@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from utils.scenario_lib import scenario_lib
-from utils.predictor import predictor_dnn
+from utils.predictor import predictor_mlp
 from utils.environment import Env
 from utils.av_policy import RL_brain
 from utils.function import set_random_seed, evaluate
@@ -23,7 +23,7 @@ name_individualization = '20230920-0054-individualization-seed=' + str(random_se
 set_random_seed(random_seed)
 
 lib = scenario_lib(path='./data/all.npz')
-predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
+predictor = predictor_mlp(input_dim=lib.max_dim, device=device)
 predictor.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, delay=delay, seed=random_seed)
 av_model = RL_brain(env, capacity=0, device=device)

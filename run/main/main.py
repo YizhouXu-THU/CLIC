@@ -11,7 +11,7 @@ import numpy as np
 import torch
 
 from utils.scenario_lib import scenario_lib
-from utils.predictor import predictor_dnn
+from utils.predictor import predictor_mlp
 from utils.environment import Env
 from utils.av_policy import RL_brain
 # from utils.av_policy_per import RL_brain
@@ -41,7 +41,7 @@ name = datetime.now().strftime('%Y%m%d-%H%M')+'-CLIC-seed='+str(random_seed)    
 set_random_seed(random_seed)
 
 lib = scenario_lib(path='./data/all.npz')
-predictor = predictor_dnn(input_dim=lib.max_dim, device=device)
+predictor = predictor_mlp(input_dim=lib.max_dim, device=device)
 predictor.to(device)
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, 
           reward_type=reward_type, seed=random_seed)
