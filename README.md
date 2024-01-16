@@ -12,7 +12,7 @@ Then run the following command to clone this repository:
 
 ```bash
 git clone https://github.com/YizhouXu-THU/CLIC.git
-cd clic
+cd CLIC
 ```
 
 You can also create a virtual environment for this repository (**Optional**):
