@@ -24,9 +24,9 @@ set_random_seed(random_seed)
 # print('eval_size:', eval_size, ' learning_rate:', learning_rate)
 
 lib = scenario_lib(path='./data/all.npz')
-all_data = np.load('./data/all.npz')['data']
-X = all_data[:, :-1]
-y = all_data[:, -1].reshape(-1)
+npz_data = np.load('./data/all.npz', allow_pickle=True)
+X = npz_data['scenario']
+y = npz_data['label']
 total_num, max_dim = X.shape
 test_size = total_num - eval_size
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)

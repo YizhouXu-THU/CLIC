@@ -25,8 +25,9 @@ _, gt_label = evaluate(av_model, env, scenarios=lib.data)
 success_rate = 1 - np.sum(gt_label) / gt_label.size
 print('Success rate: %.4f' % success_rate)
 
-scenario_data = np.append(lib.data, gt_label.reshape(-1,1), axis=1)
+# scenario_data = np.append(lib.data, gt_label.reshape(-1,1), axis=1)
 # np.save('./data/all.npy', scenario_data)
-np.savez('./data/all.npz', data=scenario_data, type_count=lib.type_count, max_bv_num=lib.max_bv_num)
+# np.savez('./data/all.npz', data=scenario_data, type_count=lib.type_count, max_bv_num=lib.max_bv_num)
+np.savez('./data/all.npz', scenario=lib.data, label=gt_label, type_count=lib.type_count, max_bv_num=lib.max_bv_num)
 
 env.close()

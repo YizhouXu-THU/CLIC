@@ -58,11 +58,11 @@ def make_dataset(av_model, env, scenarios: np.ndarray, device='cuda') -> dict[st
                 
                 state = next_state
     
-    states = np.array(states, dtype=np.float32)
-    actions = np.array(actions, dtype=np.float32)
-    next_states = np.array(next_states, dtype=np.float32)
-    rewards = np.array(rewards, dtype=np.float32)
-    dones = np.array(dones, dtype=np.float32)
+    states = np.array(states, dtype=np.float16)
+    actions = np.array(actions, dtype=np.float16)
+    next_states = np.array(next_states, dtype=np.float16)
+    rewards = np.array(rewards, dtype=np.float16)
+    dones = np.array(dones, dtype=np.float16)
     
     dataset = dict(
         observations=states, 
@@ -94,7 +94,7 @@ def evaluate(av_model, env, scenarios: np.ndarray, need_metrics=False) -> tuple[
     labels: The performance of the AV model in the given scenarios (accident: 1, otherwise: 0). 
     """
     scenario_num = scenarios.shape[0]
-    labels = np.zeros(scenario_num)
+    labels = np.zeros(scenario_num, dtype=int)
     if need_metrics:
         vels, accs, jerks, ang_vels, lateral_accs, success_vel = \
                         np.empty((0)), np.empty((0)), np.empty((0)), np.empty((0)), np.empty((0)), np.empty((0))

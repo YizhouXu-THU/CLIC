@@ -20,23 +20,12 @@ class scenario_lib:
     def load_data(self) -> np.ndarray:
         """Load all data under the path. """
         if (os.path.exists(self.path)) and (os.path.isfile(self.path)):
-            # load from NPY file
-            # data = np.load(self.path)
-            # data = data[:, :-1]     # the last column is the predicted labels, which is not required here
-            # self.max_timestep = int(np.max(data[:, ::6]))
-            # for subpath in os.listdir(self.path):
-            #     bv_num = int(subpath[-1])
-            #     self.max_bv_num = max(self.max_bv_num, bv_num)
-            #     n = 0
-            #     for filename in os.listdir(self.path+subpath):
-            #         n += 1
-            #     self.type_count[bv_num] = n
-            all_data = np.load(self.path, allow_pickle=True)
-            data = all_data['data']
-            data = data[:, :-1]     # the last column is the predicted labels, which is not required here
+            # load from NPZ file
+            npz_data = np.load(self.path, allow_pickle=True)
+            data = npz_data['scenario']
             self.max_timestep = int(np.max(data[:, ::6]))
-            self.type_count = all_data['type_count'].item()
-            self.max_bv_num = all_data['max_bv_num'].item()
+            self.type_count = npz_data['type_count'].item()
+            self.max_bv_num = npz_data['max_bv_num'].item()
         elif (os.path.exists(self.path)) and (os.path.isdir(self.path)):
             # load from original CSV files
             data_dict = {}
@@ -46,7 +35,7 @@ class scenario_lib:
                 n = 0
                 # for filename in os.listdir(self.path+subpath):
                 for filename in tqdm(os.listdir(self.path+subpath), unit='file'):
-                    scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=float)
+                    scenario = np.loadtxt(self.path+subpath+'/'+filename, skiprows=1, delimiter=',', dtype=np.float16)
                     self.max_timestep = max(self.max_timestep, int(scenario[-1, 0]))
                     if n == 0:
                         data_dict[bv_num] = [scenario]
@@ -60,7 +49,7 @@ class scenario_lib:
                 data_list.extend(value)
             data = self.fill_zero(data_list)
         self.max_timestep += 1  # starting from 0, so the number of frames should + 1
-        return data
+        return data.astype(np.float16)
     
     def fill_zero(self, data: list[np.ndarray]) -> np.ndarray:
         """

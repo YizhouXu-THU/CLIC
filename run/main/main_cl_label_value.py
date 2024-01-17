@@ -114,10 +114,8 @@ t6 = time.time()
 print('    Labeling time: %.1fs' % (t6-t5))
 
 # sort all scenarios by label value from smallest to largest
-sorted_data = np.load('./data/all.npz')['data']
-sorted_data = sorted_data[:, :-1]
 index = np.argsort(lib.labels)
-sorted_data = sorted_data[index]
+sorted_data = lib.data[index]
 label_nums=[0, 0, 0, 0, 0]
 for i in range(5):
     label_nums[i] = lib.labels[lib.labels < 0.2 * (i + 1)].shape[0]

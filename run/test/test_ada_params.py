@@ -9,9 +9,9 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import GridSearchCV
 
 
-all_data = np.load('./all_data.npz')['data']
-X_train = all_data[:, :-1]
-y_train = all_data[:, -1].reshape(-1)
+npz_data = np.load('./data/example.npz', allow_pickle=True)
+X_train = npz_data['scenario']
+y_train = npz_data['label']
 n_estimators = [300, 350, 360, 370, 800]
 learning_rate = [0.01, 0.02, 0.04, 0.07, 0.08, 0.09]
 params2 = {'n_estimators': n_estimators, 'learning_rate': learning_rate}

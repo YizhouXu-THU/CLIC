@@ -20,7 +20,7 @@ class PrioritizedReplayBuffer:
         self.beta = beta
         self.memory = collections.deque(maxlen=capacity)
         self.device = device
-        self.priorities = np.zeros((capacity,), dtype=np.float32)
+        self.priorities = np.zeros((capacity,), dtype=np.float16)
         self.priorities_sum = 0.0
         self.priorities_max = 1.0
 
@@ -56,7 +56,7 @@ class PrioritizedReplayBuffer:
 
         weights = (len(self.memory) * probabilities[indices]) ** (-self.beta)
         weights /= weights.max()
-        weights = np.array(weights, dtype=np.float32)
+        weights = np.array(weights, dtype=np.float16)
 
 
         for experience in batch:
@@ -84,7 +84,7 @@ class PrioritizedReplayBuffer:
 
     def clear(self) -> None:
         self.memory.clear()
-        self.priorities = np.zeros((self.capacity,), dtype=np.float32)
+        self.priorities = np.zeros((self.capacity,), dtype=np.float16)
         self.priorities_sum = 0.0
 
 
