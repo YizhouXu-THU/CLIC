@@ -18,20 +18,20 @@ cd CLIC
 You can create a virtual environment for this repository (**Optional**):
 
 ```bash
-conda env create -f environment.yml
+conda env create -n CLIC python=3.10.13
 conda activate CLIC
 ```
 
-Or install the dependencies directly (with `Python>=3.9` already installed):
+Then install the dependencies which are necessary (with `Python>=3.9`):
 
 ```bash
 pip install -r requirements.txt
 ```
 
-And add this repository directory to your `PYTHONPATH` environment variable:
+You should additionally install `torch` following the [PyTorch official website](https://pytorch.org/) based on your system type and CUDA version (or use CPU only). For example:
 
 ```bash
-export PYTHONPATH="$PYTHONPATH:$(pwd)"
+pip install torch==1.13.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
 ```
 
 ## Data
@@ -100,7 +100,7 @@ Run the main training and testing experiment directly:
 python run/main/main.py
 ```
 
-And you can also try baselines by running `./run/main/*.py`, or modify some experimental settings and hyperparameters.
+And you can also try baselines by running `./run/main/*.py`, or modify some experimental settings and hyperparameters in these files.
 
 If you want to observe the real-time motion states of the vehicles through SUMO GUI, set parameter `sumo_gui=True`, and ensure your device has already installed SUMO GUI.
 
@@ -114,7 +114,7 @@ You can resort to [Weights & Biases](https://wandb.ai/site) to login your person
 export WANDB_API_KEY=YOUR_WANDB_API_KEY
 ```
 
-and set parameter `use_wandb=True` to turn on the online syncronization.
+and set parameter `use_wandb=True` in `.py` files to turn on the online syncronization.
 
 ## Citation
 
