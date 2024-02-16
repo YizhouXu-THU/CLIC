@@ -121,10 +121,10 @@ and set parameter `use_wandb=True` in `.py` files to turn on the online syncroni
 If you are using CLIC framework or code for your project development, please cite the following paper:
 
 ```
-@article{niu2023continual,
+@inproceedings{niu2023continual,
   title={Continual Driving Policy Optimization with Closed-Loop Individualized Curricula},
   author={Niu, Haoyi and Xu, Yizhou and Jiang, Xingjian and Hu, Jianming},
-  journal={NeurIPS Machine Learning for Autonomous Driving Symposium},
-  year={2023}
+  booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
+  year={2024}
 }
 ```
