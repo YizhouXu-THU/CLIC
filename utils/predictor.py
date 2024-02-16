@@ -90,6 +90,7 @@ class predictor_vae(nn.Module):
     def __init__(self, input_dim: int, hidden_dim=(256,64,16), latent_dim=2, device='cuda') -> None:
         super().__init__()
         self.device = device
+        self.latent_dim = latent_dim
         
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, hidden_dim[0]),

@@ -187,10 +187,10 @@ def train_predictor(predictor,
     optimizer = optim.Adam(predictor.parameters(), lr=lr)
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     total_size = y_train.size
-    batch_num = math.ceil(total_size/batch_size)
 
-    predictor.train()
     for epoch in range(epochs):
+        predictor.train()
+        batch_num = math.ceil(total_size/batch_size)
         total_loss = 0.0
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
@@ -237,11 +237,11 @@ def train_validate_predictor(predictor,
     # optimizer = optim.SGD(predictor.parameters(), lr=lr, momentum=0.9)
     train_size = y_train.size
     valid_size = y_valid.size
-    batch_num = math.ceil(train_size/batch_size)
 
     for epoch in range(epochs):
         # train
         predictor.train()
+        batch_num = math.ceil(train_size/batch_size)
         total_loss = 0.0
         total_correct = 0
         # shuffle
@@ -284,9 +284,16 @@ def train_validate_predictor(predictor,
         # validate
         with torch.no_grad():
             predictor.eval()
+            batch_num = math.ceil(valid_size/batch_size)
+            out = torch.zeros(0, dtype=torch.float32, device=device)
             X = torch.tensor(X_valid, dtype=torch.float32, device=device)
             y = torch.tensor(y_valid, dtype=torch.float32, device=device)
-            out = predictor(X)
+            # out = predictor(X)
+            for iteration in range(batch_num):
+                X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
+                X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+                out_batch = predictor(X_batch)
+                out = torch.cat((out, out_batch), dim=0)
             bce_loss = loss_function(out, y)
         
         y_pred = (out > 0.5).data.cpu().numpy().squeeze()
@@ -309,10 +316,10 @@ def train_predictor_vae(predictor,
     norm_loss = lambda mu, logvar: -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())  # KL divergence
     optimizer = optim.Adam(predictor.parameters(), lr=lr)
     total_size = y_train.size
-    batch_num = math.ceil(total_size/batch_size)
     
-    predictor.train()
     for epoch in range(epochs):
+        predictor.train()
+        batch_num = math.ceil(total_size/batch_size)
         total_loss = 0.0
         total_class_loss = 0.0
         # shuffle
@@ -342,7 +349,7 @@ def train_predictor_vae(predictor,
         
         total_loss /= batch_num
         total_class_loss /= batch_num
-        print('    Epoch:', epoch+1, 
+        print('Epoch:', epoch+1, 
             #   ' train total loss: %.4f' % total_loss, 
               ' train classification loss: %.4f' % total_class_loss)
         
@@ -361,15 +368,16 @@ def train_validate_predictor_vae(predictor,
     optimizer = optim.Adam(predictor.parameters(), lr=lr)
     train_size = y_train.size
     valid_size = y_valid.size
-    batch_num = math.ceil(train_size/batch_size)
     train_loss = []
     test_loss = []
     
     for epoch in range(epochs):
         # train
         predictor.train()
+        batch_num = math.ceil(train_size/batch_size)
         total_loss = 0.0
         total_class_loss = 0.0
+        total_correct = 0
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
         np.random.shuffle(data_train)
@@ -394,39 +402,63 @@ def train_validate_predictor_vae(predictor,
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            
+            y_pred = (output > 0.5).data.cpu().numpy().squeeze()
+            y = y.data.cpu().numpy().squeeze()
+            total_correct += sum(y_pred == y)
         
         total_loss /= batch_num
         total_class_loss /= batch_num
+        accuracy = total_correct / train_size
         train_loss.append(total_class_loss)
-        print('    Epoch:', epoch+1, 
+        print('Epoch:', epoch+1, 
             #   ' train total loss: %.4f' % total_loss, 
               ' train classification loss: %.4f' % total_class_loss, 
+              ' train accuracy: %.4f' % accuracy, 
               end='')
         
         if wandb_logger is not None:
             wandb_logger.log({
                 'Predictor train loss': total_loss, 
                 'Predictor train classification loss': total_class_loss, 
+                'Predictor train accuracy': accuracy, 
                 })
         
         # validate
         with torch.no_grad():
             predictor.eval()
+            batch_num = math.ceil(valid_size/batch_size)
+            decoded = torch.zeros((0, X_valid.shape[1]), dtype=torch.float32, device=device)
+            output = torch.zeros(0, dtype=torch.float32, device=device)
+            mu = torch.zeros((0, predictor.latent_dim), dtype=torch.float32, device=device)
+            logvar = torch.zeros((0, predictor.latent_dim), dtype=torch.float32, device=device)
             X = torch.tensor(X_valid, dtype=torch.float32, device=device)
             y = torch.tensor(y_valid, dtype=torch.float32, device=device)
-            decoded, output, mu, logvar = predictor(X)
+            # decoded, output, mu, logvar = predictor(X)
+            for iteration in range(batch_num):
+                X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
+                X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+                decoded_batch, output_batch, mu_batch, logvar_batch = predictor(X_batch)
+                decoded = torch.cat((decoded, decoded_batch), dim=0)
+                output = torch.cat((output, output_batch), dim=0)
+                mu = torch.cat((mu, mu_batch), dim=0)
+                logvar = torch.cat((logvar, logvar_batch), dim=0)
             loss = recon_loss(decoded, X) + class_loss(output, y) + norm_loss(mu, logvar)
             test_class_loss = class_loss(output, y)
         
+        y_pred = (output > 0.5).data.cpu().numpy().squeeze()
+        accuracy = sum(y_pred == y_valid) / valid_size
         test_loss.append(test_class_loss.item())
         print('    ', 
             #   'test loss: %.4f' % loss.item(), 
-              'test classification loss: %.4f' % test_class_loss.item())
+              'test classification loss: %.4f' % test_class_loss.item(), 
+              'test accuracy: %.4f' % accuracy)
         
         if wandb_logger is not None:
             wandb_logger.log({
                 'Predictor valid loss': loss.item(), 
                 'Predictor valid classification loss': test_class_loss.item(), 
+                'Predictor valid accuracy': accuracy, 
                 })
 
 

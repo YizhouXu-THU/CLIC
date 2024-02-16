@@ -6,6 +6,7 @@ sys.path.append(root_path)
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
+from ptflops import get_model_complexity_info
 
 from utils.scenario_lib import scenario_lib
 from utils.predictor import predictor_mlp, predictor_rnn, predictor_lstm, predictor_vae
@@ -36,6 +37,8 @@ predictor = predictor_mlp(input_dim=max_dim, device=device)
 # predictor = predictor_lstm(timestep=lib.max_timestep, input_dim=max_dim, device=device)
 # predictor = predictor_vae(input_dim=max_dim, device=device)
 predictor.to(device)
+flops, params = get_model_complexity_info(predictor, (max_dim,), print_per_layer_stat=False)
+print('Flops:', flops, ' Params:', params)
 
 train_validate_predictor(predictor, X_train, y_train, X_test, y_test, 
                          epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
