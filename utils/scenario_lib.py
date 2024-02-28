@@ -101,6 +101,20 @@ class scenario_lib:
         self.labels = labels
         return labels
     
+    def labeling_vae(self, vae, classifier) -> np.ndarray:
+        """
+        Label each scenario using the VAE and Classifier. 
+        
+        The label value is a real number within [0,1]. 
+        """
+        vae.eval(), classifier.eval()
+        with torch.no_grad():
+            scenarios = torch.tensor(self.data, dtype=torch.float32, device=vae.device)
+            _, latent, _ = vae(scenarios)
+            labels = classifier(latent).cpu().numpy()
+        self.labels = labels
+        return labels
+    
     def select(self, size: int) -> np.ndarray:
         """
         Sample scenarios with their labels as probability or weight. 

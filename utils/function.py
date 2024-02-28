@@ -309,7 +309,7 @@ def train_validate_predictor(predictor,
                 })
 
 
-def train_predictor_vae(vae, scenario_lib, 
+def train_predictor_vae(vae, classifier, scenario_lib, 
                         X_train: np.ndarray, y_train: np.ndarray, 
                         epochs_vae=200, epochs=20, lr=1e-4, batch_size=128, 
                         wandb_logger=None, device='cuda') -> None:
@@ -364,7 +364,6 @@ def train_predictor_vae(vae, scenario_lib,
     
     
     # train predictor for classification
-    classifier = predictor_mlp(input_dim=vae.latent_dim)
     optimizer = optim.Adam(classifier.parameters(), lr=lr)
     loss_classifier = nn.BCELoss()
     
@@ -414,7 +413,7 @@ def train_predictor_vae(vae, scenario_lib,
                 })
 
 
-def train_validate_predictor_vae(vae, scenario_lib, 
+def train_validate_predictor_vae(vae, classifier, scenario_lib, 
                                  X_train: np.ndarray, y_train: np.ndarray, 
                                  X_valid: np.ndarray, y_valid: np.ndarray,
                                  epochs_vae=200, epochs=20, lr=1e-4, batch_size=128, 
@@ -501,7 +500,6 @@ def train_validate_predictor_vae(vae, scenario_lib,
     
     
     # train and validate predictor for classification
-    classifier = predictor_mlp(input_dim=vae.latent_dim)
     optimizer = optim.Adam(classifier.parameters(), lr=lr)
     loss_classifier = nn.BCELoss()
     
