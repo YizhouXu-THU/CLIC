@@ -12,9 +12,15 @@ class scenario_lib:
         self.max_bv_num = 0                         # initialize with 0
         self.max_timestep = 0                       # initialize with 0
         self.type_count = {}                        # count separately based on the number of BV
-        self.data = self.load_data()
+        self.data = self.load_data()                # shape: (scenario_num, max_dim)
         self.scenario_num = self.data.shape[0]
         self.max_dim = self.data.shape[1]
+        self.min_x = np.min(self.data[:, 2::6]).item()
+        self.max_x = np.max(self.data[:, 2::6]).item()
+        self.min_y = np.min(self.data[:, 3::6]).item()
+        self.max_y = np.max(self.data[:, 3::6]).item()
+        self.max_vel = np.max(self.data[:, 4::6]).item()
+        self.max_yaw = np.max(np.abs(self.data[:, 5::6])).item()
         self.labels = np.ones(self.scenario_num)    # initialize with 1
     
     def load_data(self) -> np.ndarray:
@@ -82,7 +88,7 @@ class scenario_lib:
         """
         return np.random.randint(self.scenario_num, size=size)
     
-    def labeling(self, predictor) -> None:
+    def labeling(self, predictor) -> np.ndarray:
         """
         Label each scenario using the Difficulty Predictor. 
         
@@ -92,7 +98,8 @@ class scenario_lib:
         with torch.no_grad():
             scenarios = torch.tensor(self.data, dtype=torch.float32, device=predictor.device)
             labels = predictor(scenarios).cpu().numpy()
-            self.labels = labels
+        self.labels = labels
+        return labels
     
     def select(self, size: int) -> np.ndarray:
         """
@@ -151,3 +158,39 @@ class scenario_lib:
             plt.savefig(save_path + filename)
         else:
             plt.show()
+    
+    def scenario_normalize(self, scenario: np.ndarray) -> np.ndarray:
+        """Normalize the input scenario by column to facilitate scenarios reconstruction through VAE and visualization. """
+        batch_size = scenario.shape[0]
+        if scenario.ndim == 2:
+            scenario = scenario.reshape((batch_size, -1, 6))
+        
+        def normalize(data: np.ndarray, min: float, max: float) -> np.ndarray:
+            return (data - min) / (max - min)
+        
+        scenario[:, :, 0] = normalize(scenario[:, :, 0], min=0, max=self.max_timestep)
+        scenario[:, :, 1] = normalize(scenario[:, :, 1], min=0, max=self.max_bv_num)
+        scenario[:, :, 2] = normalize(scenario[:, :, 2], min=self.min_x, max=self.max_x)
+        scenario[:, :, 3] = normalize(scenario[:, :, 3], min=self.min_y, max=self.max_y)
+        scenario[:, :, 4] = normalize(scenario[:, :, 4], min=0.0, max=self.max_vel)
+        scenario[:, :, 5] = normalize(scenario[:, :, 5], min=-self.max_yaw, max=self.max_yaw)
+
+        return scenario.reshape((batch_size, -1))
+    
+    def scenario_denormalize(self, scenario: np.ndarray) -> np.ndarray:
+        """Denormalize the input scenario by column. """
+        batch_size = scenario.shape[0]
+        if scenario.ndim == 2:
+            scenario = scenario.reshape((batch_size, -1, 6))
+        
+        def denormalize(data: np.ndarray, min: float, max: float) -> np.ndarray:
+            return data * (max - min) + min
+        
+        scenario[:, :, 0] = denormalize(scenario[:, :, 0], min=0, max=self.max_timestep)
+        scenario[:, :, 1] = denormalize(scenario[:, :, 1], min=0, max=self.max_bv_num)
+        scenario[:, :, 2] = denormalize(scenario[:, :, 2], min=self.min_x, max=self.max_x)
+        scenario[:, :, 3] = denormalize(scenario[:, :, 3], min=self.min_y, max=self.max_y)
+        scenario[:, :, 4] = denormalize(scenario[:, :, 4], min=0.0, max=self.max_vel)
+        scenario[:, :, 5] = denormalize(scenario[:, :, 5], min=-self.max_yaw, max=self.max_yaw)
+
+        return scenario.reshape((batch_size, -1))

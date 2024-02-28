@@ -16,9 +16,6 @@ class predictor_mlp(nn.Module):
         self.dropout_layer = nn.Dropout(p=0.2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # if isinstance(x, np.ndarray):
-        #     x = torch.tensor(x, dtype=torch.float32).to(self.device)
-        
         if self.dropout:
             x = self.dropout_layer(self.fc1(x))
             x = F.relu(x)
@@ -31,7 +28,6 @@ class predictor_mlp(nn.Module):
             x = F.relu(x)
         output = self.fc3(x)
         
-        # output = 2 * torch.tanh(x)  # soft clip
         if self.output_dim == 1:
             output = torch.sigmoid(output).squeeze()
         elif self.output_dim == 2:
@@ -58,7 +54,7 @@ class predictor_rnn(nn.Module):
         x, h = self.rnn(x, h)
         x = x[:, -1, :]
         output = self.fc(x)
-        output = F.softmax(output, dim=1)[:,1]
+        output = F.softmax(output, dim=1)[:,-1]
         return output
 
 
@@ -82,44 +78,29 @@ class predictor_lstm(nn.Module):
         x, (h, c) = self.lstm(x, (h, c))
         x = x[:, -1, :]
         output = self.fc(x)
-        output = F.softmax(output, dim=1)[:,1]
+        output = F.softmax(output, dim=1)[:,-1]
         return output
 
 
 class predictor_vae(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim=(256,64,16), latent_dim=2, device='cuda') -> None:
+    def __init__(self, input_dim: int, hidden_dim=256, latent_dim=16, device='cuda') -> None:
         super().__init__()
         self.device = device
         self.latent_dim = latent_dim
         
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim[0]),
+            nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim[0], hidden_dim[1]),
-            nn.ReLU(),
-            nn.Linear(hidden_dim[1], hidden_dim[2]),
-            nn.ReLU(),
-            nn.Linear(hidden_dim[2], latent_dim * 2)
         )
+        self.encoder_mu, self.encoder_logvar = nn.Linear(hidden_dim, latent_dim), nn.Linear(hidden_dim, latent_dim)
 
         self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dim[2]),
+            nn.Linear(latent_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim[2], hidden_dim[1]),
-            nn.ReLU(),
-            nn.Linear(hidden_dim[1], hidden_dim[0]),
-            nn.ReLU(),
-            nn.Linear(hidden_dim[0], input_dim),
-            nn.Sigmoid()
+            nn.Linear(hidden_dim, input_dim),
+            nn.Sigmoid(),
         )
 
-        self.classifier = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dim[1]),
-            nn.ReLU(),
-            nn.Linear(hidden_dim[1], 1),
-            nn.Sigmoid()
-        )
-    
     def reparameterize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
         std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
@@ -128,8 +109,7 @@ class predictor_vae(nn.Module):
     
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         encoded = self.encoder(x)
-        mu, log_var = torch.chunk(encoded, 2, dim=1)
+        mu, log_var = self.encoder_mu(encoded), self.encoder_logvar(encoded)
         z = self.reparameterize(mu, log_var)
         decoded = self.decoder(z)
-        output = self.classifier(z).squeeze()
-        return decoded, output, mu, log_var
+        return decoded, mu, log_var
