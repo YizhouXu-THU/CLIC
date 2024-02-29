@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib import rcParams
+rcParams['pdf.fonttype'] = 42
+rcParams['ps.fonttype'] = 42
 
 result = np.array([[0.275, 0.408, 0.501, 0.630, 0.647, 0.706, 0.703, 0.718, 0.684, 0.737],
                    [0.178, 0.360, 0.491, 0.625, 0.643, 0.697, 0.690, 0.747, 0.682, 0.678],
@@ -33,3 +36,10 @@ ax.set_xlabel('AV iteration')
 ax.set_ylabel('predictor iteration')
 ax.set_title('Success Rate')
 plt.savefig('./figure/heat_map.pdf', bbox_inches='tight')
+
+fig, ax = plt.subplots(figsize=(7, 4.5))
+sns.heatmap(result, cmap='turbo', ax=ax, cbar=True, xticklabels=av, yticklabels=predictor, annot=False, fmt='.3f')
+ax.set_xlabel('AV iteration')
+ax.set_ylabel('predictor iteration')
+ax.set_title('Success Rate')
+plt.savefig('./figure/heat_map_nogrid.pdf', bbox_inches='tight')
