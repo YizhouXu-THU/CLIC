@@ -304,8 +304,8 @@ def train_validate_predictor(predictor,
         print(' test loss: %.4f' % bce_loss.item(), ' test accuracy: %.4f' % accuracy, end='')
         if wandb_logger is not None:
             wandb_logger.log({
-                'Predictor valid loss': loss.item(), 
-                'Predictor valid accuracy': accuracy, 
+                'Predictor test loss': loss.item(), 
+                'Predictor test accuracy': accuracy, 
                 })
 
 
@@ -491,11 +491,11 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
                 loss = loss_vae(decoded, X, mu, log_var)
                 mse_loss = F.mse_loss(decoded, X)
             
-            print(' VAE valid loss: %.4f' % loss.item(), ' VAE valid MSE loss: %.4f' % mse_loss.item(), end='')
+            print(' VAE test loss: %.4f' % loss.item(), ' VAE test MSE loss: %.4f' % mse_loss.item(), end='')
             if wandb_logger is not None:
                 wandb_logger.log({
-                    'VAE valid loss': loss.item(), 
-                    'VAE valid MSE loss': mse_loss.item(),  
+                    'VAE test loss': loss.item(), 
+                    'VAE test MSE loss': mse_loss.item(),  
                     })
     print()
     
@@ -570,11 +570,11 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
         y_pred = (out > 0.5).data.cpu().numpy().squeeze()
         accuracy = sum(y_pred == y_valid) / valid_size
         
-        print(' classifier valid loss: %.4f' % bce_loss.item(), ' classifier valid accuracy: %.4f' % accuracy)
+        print(' classifier test loss: %.4f' % bce_loss.item(), ' classifier test accuracy: %.4f' % accuracy)
         if wandb_logger is not None:
             wandb_logger.log({
-                'Classifier valid loss': bce_loss.item(), 
-                'Classifier valid accuracy': accuracy, 
+                'Classifier test loss': bce_loss.item(), 
+                'Classifier test accuracy': accuracy, 
                 })
 
 
