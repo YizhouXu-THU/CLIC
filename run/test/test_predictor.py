@@ -48,8 +48,8 @@ classifier = predictor_mlp(input_dim=vae.latent_dim, device=device)
 vae.to(device), classifier.to(device)
 flops_vae, params_vae = get_model_complexity_info(vae, (max_dim,), print_per_layer_stat=False)
 flops_classifier, params_classifier = get_model_complexity_info(classifier, (vae.latent_dim,), print_per_layer_stat=False)
-print('VAE Flops:', flops_vae, 'VAE Params:', params_vae, 
-      'Classifier Flops:', flops_classifier, 'Classifier Params:', params_classifier)
+print('VAE Flops:', flops_vae, 'VAE Params:', params_vae, end='    ')
+print('Classifier Flops:', flops_classifier, 'Classifier Params:', params_classifier, end='')
 train_validate_predictor_vae(vae, classifier, lib, X_train, y_train, X_test, y_test, 
                              epochs_vae=epochs_vae, epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
 lib.labeling_vae(vae, classifier)

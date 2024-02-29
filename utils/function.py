@@ -276,7 +276,7 @@ def train_validate_predictor(predictor,
         total_loss /= batch_num
         accuracy = total_correct / train_size
         
-        print('Epoch:', epoch+1, ' train loss: %.4f' % total_loss, ' train accuracy: %.4f' % accuracy, end='    ')
+        print('\nEpoch:', epoch+1, ' train loss: %.4f' % total_loss, ' train accuracy: %.4f' % accuracy, end='    ')
         if wandb_logger is not None:
             wandb_logger.log({
                 'Predictor train loss': total_loss, 
@@ -301,7 +301,7 @@ def train_validate_predictor(predictor,
         y_pred = (out > 0.5).data.cpu().numpy().squeeze()
         accuracy = sum(y_pred == y_valid) / valid_size
         
-        print(' test loss: %.4f' % bce_loss.item(), ' test accuracy: %.4f' % accuracy)
+        print(' test loss: %.4f' % bce_loss.item(), ' test accuracy: %.4f' % accuracy, end='')
         if wandb_logger is not None:
             wandb_logger.log({
                 'Predictor valid loss': loss.item(), 
@@ -311,7 +311,7 @@ def train_validate_predictor(predictor,
 
 def train_predictor_vae(vae, classifier, scenario_lib, 
                         X_train: np.ndarray, y_train: np.ndarray, 
-                        epochs_vae=200, epochs=20, lr=1e-4, batch_size=128, 
+                        epochs_vae=1000, epochs=20, lr=1e-4, batch_size=128, 
                         wandb_logger=None, device='cuda') -> None:
     # train VAE for reconstruction
     def loss_vae(recon_x: torch.Tensor, x: torch.Tensor, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
@@ -390,8 +390,8 @@ def train_predictor_vae(vae, classifier, scenario_lib,
             X = torch.tensor(X, dtype=torch.float32, device=device)
             y = torch.tensor(y, dtype=torch.float32, device=device)
             
-            decoded, mu, log_var = vae(X)
-            out = classifier(mu)
+            _, latent, _ = vae(X)
+            out = classifier(latent)
             loss = loss_classifier(out, y)
             total_loss += loss.item()
             optimizer.zero_grad()
@@ -416,7 +416,7 @@ def train_predictor_vae(vae, classifier, scenario_lib,
 def train_validate_predictor_vae(vae, classifier, scenario_lib, 
                                  X_train: np.ndarray, y_train: np.ndarray, 
                                  X_valid: np.ndarray, y_valid: np.ndarray,
-                                 epochs_vae=200, epochs=20, lr=1e-4, batch_size=128, 
+                                 epochs_vae=1000, epochs=20, lr=1e-4, batch_size=128, 
                                  wandb_logger=None, device='cuda') -> None:
     # train and validate VAE for reconstruction
     def loss_vae(recon_x: torch.Tensor, x: torch.Tensor, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
@@ -462,7 +462,7 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
         total_loss /= batch_num
         total_mse_loss /= batch_num
         
-        print('Epoch:', epoch+1, ' VAE train loss: %.4f' % total_loss, ' VAE train MSE loss: %.4f' % total_mse_loss, end='    ')
+        print('\nEpoch:', epoch+1, ' VAE train loss: %.4f' % total_loss, ' VAE train MSE loss: %.4f' % total_mse_loss, end='    ')
         if wandb_logger is not None:
             wandb_logger.log({
                 'VAE train loss': total_loss, 
@@ -470,33 +470,34 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
                 })
         
         # validate
-        with torch.no_grad():
-            vae.eval()
-            batch_num = math.ceil(valid_size/batch_size)
-            decoded = torch.zeros((0, X_valid.shape[1]), dtype=torch.float32, device=device)
-            output = torch.zeros(0, dtype=torch.float32, device=device)
-            mu = torch.zeros((0, vae.latent_dim), dtype=torch.float32, device=device)
-            log_var = torch.zeros((0, vae.latent_dim), dtype=torch.float32, device=device)
-            X = torch.tensor(X_valid, dtype=torch.float32, device=device)
-            y = torch.tensor(y_valid, dtype=torch.float32, device=device)
-            # decoded, output, mu, log_var = predictor(X)
-            for iteration in range(batch_num):
-                X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
-                X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
-                decoded_batch, output_batch, mu_batch, log_var_batch = vae(X_batch)
-                decoded = torch.cat((decoded, decoded_batch), dim=0)
-                output = torch.cat((output, output_batch), dim=0)
-                mu = torch.cat((mu, mu_batch), dim=0)
-                log_var = torch.cat((log_var, log_var_batch), dim=0)
-            loss = loss_vae(decoded, X, mu, log_var)
-            mse_loss = F.mse_loss(decoded, X)
-        
-        print(' VAE valid loss: %.4f' % loss.item(), ' VAE valid MSE loss: %.4f' % mse_loss.item())
-        if wandb_logger is not None:
-            wandb_logger.log({
-                'VAE valid loss': loss.item(), 
-                'VAE valid MSE loss': mse_loss.item(),  
-                })
+        if (epoch+1) % 10 == 0:
+            with torch.no_grad():
+                vae.eval()
+                batch_num = math.ceil(valid_size/batch_size)
+                decoded = torch.zeros((0, X_valid.shape[1]), dtype=torch.float32, device=device)
+                mu = torch.zeros((0, vae.latent_dim), dtype=torch.float32, device=device)
+                log_var = torch.zeros((0, vae.latent_dim), dtype=torch.float32, device=device)
+                X_valid = scenario_lib.scenario_normalize(X_valid)
+                X = torch.tensor(X_valid, dtype=torch.float32, device=device)
+                y = torch.tensor(y_valid, dtype=torch.float32, device=device)
+                # decoded, output, mu, log_var = predictor(X)
+                for iteration in range(batch_num):
+                    X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
+                    X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+                    decoded_batch, mu_batch, log_var_batch = vae(X_batch)
+                    decoded = torch.cat((decoded, decoded_batch), dim=0)
+                    mu = torch.cat((mu, mu_batch), dim=0)
+                    log_var = torch.cat((log_var, log_var_batch), dim=0)
+                loss = loss_vae(decoded, X, mu, log_var)
+                mse_loss = F.mse_loss(decoded, X)
+            
+            print(' VAE valid loss: %.4f' % loss.item(), ' VAE valid MSE loss: %.4f' % mse_loss.item(), end='')
+            if wandb_logger is not None:
+                wandb_logger.log({
+                    'VAE valid loss': loss.item(), 
+                    'VAE valid MSE loss': mse_loss.item(),  
+                    })
+    print()
     
     
     # train and validate predictor for classification
@@ -554,16 +555,18 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
             classifier.eval()
             batch_num = math.ceil(valid_size/batch_size)
             out = torch.zeros(0, dtype=torch.float32, device=device)
+            X_valid = scenario_lib.scenario_normalize(X_valid)
             X = torch.tensor(X_valid, dtype=torch.float32, device=device)
             y = torch.tensor(y_valid, dtype=torch.float32, device=device)
             # out = predictor(X)
             for iteration in range(batch_num):
                 X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
                 X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
-                out_batch = classifier(X_batch)
+                _, latent, _ = vae(X_batch)
+                out_batch = classifier(latent)
                 out = torch.cat((out, out_batch), dim=0)
             bce_loss = loss_classifier(out, y)
-            
+        
         y_pred = (out > 0.5).data.cpu().numpy().squeeze()
         accuracy = sum(y_pred == y_valid) / valid_size
         
