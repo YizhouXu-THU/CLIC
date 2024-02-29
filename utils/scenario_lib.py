@@ -96,10 +96,19 @@ class scenario_lib:
         """
         predictor.eval()
         with torch.no_grad():
-            scenarios = torch.tensor(self.data, dtype=torch.float32, device=predictor.device)
-            labels = predictor(scenarios).cpu().numpy()
-        self.labels = labels
-        return labels
+            if predictor.__class__.__name__ == 'predictor_mlp':
+                scenarios = torch.tensor(self.data, dtype=torch.float32, device=predictor.device)
+                labels = predictor(scenarios).cpu().numpy()
+            elif predictor.__class__.__name__ in ['predictor_rnn', 'predictor_lstm']:
+                bathc_size = 128
+                batch_num = math.ceil(self.scenario_num / bathc_size)
+                labels = torch.zeros(0, dtype=torch.float32, device=predictor.device)
+                for i in range(batch_num):
+                    scenarios = self.data[i*bathc_size:(i+1)*bathc_size]
+                    scenarios = torch.tensor(scenarios, dtype=torch.float32, device=predictor.device)
+                    labels = torch.cat((labels, predictor(scenarios)), dim=0)
+        self.labels = labels.cpu().numpy()
+        return self.labels
     
     def labeling_vae(self, vae, classifier) -> np.ndarray:
         """

@@ -37,7 +37,7 @@ predictor = predictor_mlp(input_dim=max_dim, device=device)
 # predictor = predictor_rnn(timestep=lib.max_timestep, input_dim=max_dim, device=device)
 # predictor = predictor_lstm(timestep=lib.max_timestep, input_dim=max_dim, device=device)
 predictor.to(device)
-flops, params = get_model_complexity_info(predictor, (max_dim,), print_per_layer_stat=False)
+flops, params = get_model_complexity_info(predictor, (max_dim,))
 print('Flops:', flops, ' Params:', params)
 train_validate_predictor(predictor, X_train, y_train, X_test, y_test, 
                          epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
