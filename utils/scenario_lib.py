@@ -100,11 +100,11 @@ class scenario_lib:
                 scenarios = torch.tensor(self.data, dtype=torch.float32, device=predictor.device)
                 labels = predictor(scenarios)
             elif predictor.__class__.__name__ in ['predictor_rnn', 'predictor_lstm']:
-                bathc_size = 128
-                batch_num = math.ceil(self.scenario_num / bathc_size)
+                batch_size = 128
+                batch_num = math.ceil(self.scenario_num / batch_size)
                 labels = torch.zeros(0, dtype=torch.float32, device=predictor.device)
                 for i in range(batch_num):
-                    scenarios = self.data[i*bathc_size:(i+1)*bathc_size]
+                    scenarios = self.data[i*batch_size:(i+1)*batch_size]
                     scenarios = torch.tensor(scenarios, dtype=torch.float32, device=predictor.device)
                     labels = torch.cat((labels, predictor(scenarios)), dim=0)
         self.labels = labels.cpu().numpy()
