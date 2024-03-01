@@ -40,6 +40,6 @@ get_model_complexity_info(vae, (max_dim,))
 get_model_complexity_info(classifier, (vae.latent_dim,))
 train_validate_predictor_vae(vae, classifier, lib, X_train, y_train, X_test, y_test, 
                              epochs_vae=epochs_vae, epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
-lib.labeling_vae(vae, classifier)
 
+lib.labeling_vae(vae, classifier)
 # lib.visualize_label_distribution(num_select=train_size, num_sample=eval_size)

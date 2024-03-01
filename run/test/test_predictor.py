@@ -40,6 +40,6 @@ predictor.to(device)
 get_model_complexity_info(predictor, (max_dim,))
 train_validate_predictor(predictor, X_train, y_train, X_test, y_test, 
                          epochs=epochs, lr=learning_rate, batch_size=batch_size, device=device)
-lib.labeling(predictor)
 
+lib.labeling(predictor)
 # lib.visualize_label_distribution(num_select=train_size, num_sample=eval_size)

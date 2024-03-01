@@ -98,7 +98,7 @@ class scenario_lib:
         with torch.no_grad():
             if predictor.__class__.__name__ == 'predictor_mlp':
                 scenarios = torch.tensor(self.data, dtype=torch.float32, device=predictor.device)
-                labels = predictor(scenarios).cpu().numpy()
+                labels = predictor(scenarios)
             elif predictor.__class__.__name__ in ['predictor_rnn', 'predictor_lstm']:
                 bathc_size = 128
                 batch_num = math.ceil(self.scenario_num / bathc_size)
