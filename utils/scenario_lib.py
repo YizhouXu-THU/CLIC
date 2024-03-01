@@ -104,7 +104,7 @@ class scenario_lib:
                 batch_num = math.ceil(self.scenario_num / batch_size)
                 labels = torch.zeros(0, dtype=torch.float32, device=predictor.device)
                 for i in range(batch_num):
-                    scenarios = self.data[i*batch_size:(i+1)*batch_size]
+                    scenarios = self.data[i*batch_size : min((i+1)*batch_size,self.scenario_num)]
                     scenarios = torch.tensor(scenarios, dtype=torch.float32, device=predictor.device)
                     labels = torch.cat((labels, predictor(scenarios)), dim=0)
         self.labels = labels.cpu().numpy()
