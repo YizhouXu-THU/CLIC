@@ -96,18 +96,14 @@ class scenario_lib:
         """
         predictor.eval()
         with torch.no_grad():
-            if predictor.__class__.__name__ == 'predictor_mlp':
-                scenarios = torch.tensor(self.data, dtype=torch.float32, device=predictor.device)
-                labels = predictor(scenarios)
-            elif predictor.__class__.__name__ in ['predictor_rnn', 'predictor_lstm']:
-                batch_size = 128
-                batch_num = math.ceil(self.scenario_num / batch_size)
-                labels = torch.zeros(0, dtype=torch.float32, device=predictor.device)
-                for i in range(batch_num):
-                    scenarios = self.data[i*batch_size : min((i+1)*batch_size,self.scenario_num)]
-                    scenarios = torch.tensor(scenarios, dtype=torch.float32, device=predictor.device)
-                    labels = torch.cat((labels, predictor(scenarios)), dim=0)
-        self.labels = labels.cpu().numpy()
+            batch_size = 128
+            batch_num = math.ceil(self.scenario_num / batch_size)
+            labels = torch.zeros(0, dtype=torch.float32, device=predictor.device)
+            for i in range(batch_num):
+                scenarios = self.data[i*batch_size : min((i+1)*batch_size,self.scenario_num)]
+                scenarios = torch.tensor(scenarios, dtype=torch.float32, device=predictor.device)
+                labels = torch.cat((labels, predictor(scenarios)), dim=0)
+            self.labels = labels.cpu().numpy()
         return self.labels
     
     def labeling_vae(self, vae, classifier) -> np.ndarray:
@@ -118,10 +114,15 @@ class scenario_lib:
         """
         vae.eval(), classifier.eval()
         with torch.no_grad():
-            scenarios = torch.tensor(self.data, dtype=torch.float32, device=vae.device)
-            _, latent, _ = vae(scenarios)
-            labels = classifier(latent).cpu().numpy()
-        self.labels = labels
+            batch_size = 128
+            batch_num = math.ceil(self.scenario_num / batch_size)
+            labels = torch.zeros(0, dtype=torch.float32, device=vae.device)
+            for i in range(batch_num):
+                scenarios = self.data[i*batch_size : min((i+1)*batch_size,self.scenario_num)]
+                scenarios = torch.tensor(scenarios, dtype=torch.float32, device=vae.device)
+                _, latent, _ = vae(scenarios)
+                labels = torch.cat((labels, classifier(latent)), dim=0)
+            self.labels = labels.cpu().numpy()
         return labels
     
     def select(self, size: int) -> np.ndarray:
