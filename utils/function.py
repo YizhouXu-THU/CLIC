@@ -307,6 +307,7 @@ def train_validate_predictor(predictor,
                 'Predictor test loss': loss.item(), 
                 'Predictor test accuracy': accuracy, 
                 })
+    print()
 
 
 def train_predictor_vae(vae, classifier, scenario_lib, 

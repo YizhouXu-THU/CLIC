@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -13,7 +12,8 @@ class predictor_mlp(nn.Module):
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc3 = nn.Linear(hidden_dim, output_dim)
         self.dropout = dropout
-        self.dropout_layer = nn.Dropout(p=0.2)
+        if self.dropout:
+            self.dropout_layer = nn.Dropout(p=0.2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.dropout:
