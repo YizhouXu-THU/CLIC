@@ -1,3 +1,4 @@
+import os
 import math
 import random
 from tqdm import trange
@@ -187,35 +188,35 @@ def train_predictor(predictor,
     optimizer = optim.Adam(predictor.parameters(), lr=lr)
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     total_size = y_train.size
+    train_batch_num = math.ceil(total_size/batch_size)
 
     for epoch in range(epochs):
         predictor.train()
-        batch_num = math.ceil(total_size/batch_size)
         total_loss = 0.0
         # shuffle
         data_train = np.concatenate((X_train, y_train.reshape((-1, 1))), axis=1)
         np.random.shuffle(data_train)
         # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
-        for iteration in range(batch_num):
+        for iteration in range(train_batch_num):
             # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
             # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
             # batch = np.concatenate((batch_pos, batch_neg), axis=0)
             # np.random.shuffle(batch)
-            # X, y = batch[:, 0:-1], batch[:, -1]
-            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
-            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
-            X = torch.tensor(X, dtype=torch.float32, device=device)
-            y = torch.tensor(y, dtype=torch.float32, device=device)
+            # X_batch, y_batch = batch[:, 0:-1], batch[:, -1]
+            X_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
+            y_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
+            X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+            y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
             
-            out = predictor(X)
-            loss = loss_function(out, y)
+            out_batch = predictor(X_batch)
+            loss = loss_function(out_batch, y_batch)
             total_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         
-        total_loss /= batch_num
+        total_loss /= train_batch_num
         
         print('    ', 'Epoch:', epoch+1, ' train loss: %.4f' % total_loss)
         if wandb_logger is not None:
@@ -228,7 +229,7 @@ def train_validate_predictor(predictor,
                              X_train: np.ndarray, y_train: np.ndarray, 
                              X_valid: np.ndarray, y_valid: np.ndarray, 
                              epochs=20, lr=1e-4, batch_size=128, 
-                             wandb_logger=None, device='cuda') -> None:
+                             wandb_logger=None, device='cuda', seed=42) -> None:
     """
     Training process of supervised learning. \n
     Including validation process, but still no calculation of hard labels. 
@@ -239,11 +240,14 @@ def train_validate_predictor(predictor,
     # optimizer = optim.SGD(predictor.parameters(), lr=lr, momentum=0.9)
     train_size = y_train.size
     valid_size = y_valid.size
+    train_batch_num = math.ceil(train_size/batch_size)
+    valid_batch_num = math.ceil(valid_size/batch_size)
+    train_losses = np.zeros(train_batch_num*epochs, dtype=np.float32)
+    valid_losses = np.zeros(valid_batch_num*epochs, dtype=np.float32)
 
     for epoch in range(epochs):
         # train
         predictor.train()
-        batch_num = math.ceil(train_size/batch_size)
         total_loss = 0.0
         total_correct = 0
         # shuffle
@@ -251,29 +255,30 @@ def train_validate_predictor(predictor,
         np.random.shuffle(data_train)
         # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
-        for iteration in range(batch_num):
+        for iteration in range(train_batch_num):
             # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
             # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
             # batch = np.concatenate((batch_pos, batch_neg), axis=0)
             # np.random.shuffle(batch)
-            # X, y = batch[:, 0:-1], batch[:, -1]
-            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
-            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
-            X = torch.tensor(X, dtype=torch.float32, device=device)
-            y = torch.tensor(y, dtype=torch.float32, device=device)
+            # X_batch, y_batch = batch[:, 0:-1], batch[:, -1]
+            X_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
+            y_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
+            X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+            y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
             
-            out = predictor(X)
-            loss = loss_function(out, y)
+            out_batch = predictor(X_batch)
+            loss = loss_function(out_batch, y_batch)
+            train_losses[epoch*train_batch_num+iteration] = loss.item()
             total_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            y_pred = (out > 0.5).data.cpu().numpy().squeeze()
-            y = y.data.cpu().numpy().squeeze()
-            total_correct += sum(y_pred == y)
+            y_pred = (out_batch > 0.5).data.cpu().numpy().squeeze()
+            y_batch = y_batch.data.cpu().numpy().squeeze()
+            total_correct += sum(y_pred == y_batch)
         
-        total_loss /= batch_num
+        total_loss /= train_batch_num
         accuracy = total_correct / train_size
         
         print('\nEpoch:', epoch+1, ' train loss: %.4f' % total_loss, ' train accuracy: %.4f' % accuracy, end='    ')
@@ -286,20 +291,22 @@ def train_validate_predictor(predictor,
         # validate
         with torch.no_grad():
             predictor.eval()
-            batch_num = math.ceil(valid_size/batch_size)
             out = torch.zeros(0, dtype=torch.float32, device=device)
-            X = torch.tensor(X_valid, dtype=torch.float32, device=device)
-            y = torch.tensor(y_valid, dtype=torch.float32, device=device)
-            # out = predictor(X)
-            for iteration in range(batch_num):
+            X_valid = torch.tensor(X_valid, dtype=torch.float32, device=device)
+            y_valid = torch.tensor(y_valid, dtype=torch.float32, device=device)
+            # out = predictor(X_valid)
+            for iteration in range(valid_batch_num):
                 X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
-                X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+                y_batch = y_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
+                # X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+                # y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
                 out_batch = predictor(X_batch)
+                valid_losses[epoch*valid_batch_num+iteration] = loss_function(out_batch, y_batch).item()
                 out = torch.cat((out, out_batch), dim=0)
-            bce_loss = loss_function(out, y)
+            bce_loss = loss_function(out, y_valid)
         
         y_pred = (out > 0.5).data.cpu().numpy().squeeze()
-        accuracy = sum(y_pred == y_valid) / valid_size
+        accuracy = sum(y_pred == y_valid.cpu().numpy()) / valid_size
         
         print(' test loss: %.4f' % bce_loss.item(), ' test accuracy: %.4f' % accuracy, end='')
         if wandb_logger is not None:
@@ -308,6 +315,11 @@ def train_validate_predictor(predictor,
                 'Predictor test accuracy': accuracy, 
                 })
     print()
+    
+    save_dir = './log/predictor/'+predictor.__class__.__name__+'/'
+    os.makedirs(save_dir, exist_ok=True)
+    np.save(save_dir+'train_losses_seed='+str(seed)+'.npy', train_losses)
+    np.save(save_dir+'valid_losses_seed='+str(seed)+'.npy', valid_losses)
 
 
 def train_predictor_vae(vae, classifier, scenario_lib, 
@@ -322,10 +334,10 @@ def train_predictor_vae(vae, classifier, scenario_lib,
     
     optimizer = optim.Adam(vae.parameters(), lr=lr)
     total_size = y_train.size
+    train_batch_num = math.ceil(total_size/batch_size)
     
     for epoch in range(epochs_vae):
         vae.train()
-        batch_num = math.ceil(total_size/batch_size)
         total_loss = 0.0
         total_mse_loss = 0.0
         # shuffle
@@ -333,28 +345,28 @@ def train_predictor_vae(vae, classifier, scenario_lib,
         np.random.shuffle(data_train)
         # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
-        for iteration in range(batch_num):
+        for iteration in range(train_batch_num):
             # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
             # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
             # batch = np.concatenate((batch_pos, batch_neg), axis=0)
             # np.random.shuffle(batch)
-            # X, y = batch[:, 0:-1], batch[:, -1]
-            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
-            # y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
-            X = scenario_lib.scenario_normalize(X)
-            X = torch.tensor(X, dtype=torch.float32, device=device)
-            # y = torch.tensor(y, dtype=torch.float32, device=device)
+            # X_batch, y_batch = batch[:, 0:-1], batch[:, -1]
+            X_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
+            y_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
+            X_batch = scenario_lib.scenario_normalize(X_batch)
+            X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+            y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
             
-            decoded, mu, log_var = vae(X)
-            loss = loss_vae(decoded, X, mu, log_var)
+            decoded, mu, log_var = vae(X_batch)
+            loss = loss_vae(decoded, X_batch, mu, log_var)
             total_loss += loss.item()
-            total_mse_loss += F.mse_loss(decoded, X).item()
+            total_mse_loss += F.mse_loss(decoded, X_batch).item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         
-        total_loss /= batch_num
-        total_mse_loss /= batch_num
+        total_loss /= train_batch_num
+        total_mse_loss /= train_batch_num
         
         print('Epoch:', epoch+1, ' VAE loss: %.1f' % total_loss, ' VAE MSE loss: %.6f' % total_mse_loss)
         if wandb_logger is not None:
@@ -371,7 +383,6 @@ def train_predictor_vae(vae, classifier, scenario_lib,
     vae.eval()
     for epoch in range(epochs):
         classifier.train()
-        batch_num = math.ceil(total_size/batch_size)
         total_loss = 0.0
         total_correct = 0
         # shuffle
@@ -379,31 +390,31 @@ def train_predictor_vae(vae, classifier, scenario_lib,
         np.random.shuffle(data_train)
         # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
-        for iteration in range(batch_num):
+        for iteration in range(train_batch_num):
             # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
             # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
             # batch = np.concatenate((batch_pos, batch_neg), axis=0)
             # np.random.shuffle(batch)
-            # X, y = batch[:, 0:-1], batch[:, -1]
-            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
-            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
-            X = scenario_lib.scenario_normalize(X)
-            X = torch.tensor(X, dtype=torch.float32, device=device)
-            y = torch.tensor(y, dtype=torch.float32, device=device)
+            # X_batch, y_batch = batch[:, 0:-1], batch[:, -1]
+            X_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), 0:-1]
+            y_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,total_size), -1]
+            X_batch = scenario_lib.scenario_normalize(X_batch)
+            X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+            y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
             
-            _, latent, _ = vae(X)
-            out = classifier(latent)
-            loss = loss_classifier(out, y)
+            _, latent, _ = vae(X_batch)
+            out_batch = classifier(latent)
+            loss = loss_classifier(out_batch, y_batch)
             total_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            y_pred = (out > 0.5).data.cpu().numpy().squeeze()
+            y_pred = (out_batch > 0.5).data.cpu().numpy().squeeze()
             y = y.data.cpu().numpy().squeeze()
             total_correct += sum(y_pred == y)
         
-        total_loss /= batch_num
+        total_loss /= train_batch_num
         accuracy = total_correct / total_size
         
         print('Epoch:', epoch+1, ' classifier loss: %.4f' % total_loss, ' classifier accuracy: %.4f' % accuracy)
@@ -418,7 +429,7 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
                                  X_train: np.ndarray, y_train: np.ndarray, 
                                  X_valid: np.ndarray, y_valid: np.ndarray,
                                  epochs_vae=1000, epochs=20, lr=1e-4, batch_size=128, 
-                                 wandb_logger=None, device='cuda') -> None:
+                                 wandb_logger=None, device='cuda', seed=42) -> None:
     # train and validate VAE for reconstruction
     def loss_vae(recon_x: torch.Tensor, x: torch.Tensor, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
         BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
@@ -428,11 +439,12 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
     optimizer = optim.Adam(vae.parameters(), lr=lr)
     train_size = y_train.size
     valid_size = y_valid.size
+    train_batch_num = math.ceil(train_size/batch_size)
+    valid_batch_num = math.ceil(valid_size/batch_size)
     
     for epoch in range(epochs_vae):
         # train
         vae.train()
-        batch_num = math.ceil(train_size/batch_size)
         total_loss = 0.0
         total_mse_loss = 0.0
         # shuffle
@@ -440,28 +452,28 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
         np.random.shuffle(data_train)
         # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
-        for iteration in range(batch_num):
+        for iteration in range(train_batch_num):
             # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
             # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
             # batch = np.concatenate((batch_pos, batch_neg), axis=0)
             # np.random.shuffle(batch)
-            # X, y = batch[:, 0:-1], batch[:, -1]
-            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
-            # y = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
-            X = scenario_lib.scenario_normalize(X)
-            X = torch.tensor(X, dtype=torch.float32, device=device)
-            # y = torch.tensor(y, dtype=torch.float32, device=device)
+            # X_batch, y_batch = batch[:, 0:-1], batch[:, -1]
+            X_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
+            y_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
+            X_batch = scenario_lib.scenario_normalize(X_batch)
+            X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+            y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
             
-            decoded, mu, log_var = vae(X)
-            loss = loss_vae(decoded, X, mu, log_var)
+            decoded, mu, log_var = vae(X_batch)
+            loss = loss_vae(decoded, X_batch, mu, log_var)
             total_loss += loss.item()
-            total_mse_loss += F.mse_loss(decoded, X).item()
+            total_mse_loss += F.mse_loss(decoded, X_batch).item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         
-        total_loss /= batch_num
-        total_mse_loss /= batch_num
+        total_loss /= train_batch_num
+        total_mse_loss /= train_batch_num
         
         print('\nEpoch:', epoch+1, ' VAE train loss: %.4f' % total_loss, ' VAE train MSE loss: %.4f' % total_mse_loss, end='    ')
         if wandb_logger is not None:
@@ -474,23 +486,23 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
         if (epoch+1) % 10 == 0:
             with torch.no_grad():
                 vae.eval()
-                batch_num = math.ceil(valid_size/batch_size)
+                valid_batch_num = math.ceil(valid_size/batch_size)
                 decoded = torch.zeros((0, X_valid.shape[1]), dtype=torch.float32, device=device)
                 mu = torch.zeros((0, vae.latent_dim), dtype=torch.float32, device=device)
                 log_var = torch.zeros((0, vae.latent_dim), dtype=torch.float32, device=device)
                 X_valid = scenario_lib.scenario_normalize(X_valid)
-                X = torch.tensor(X_valid, dtype=torch.float32, device=device)
-                y = torch.tensor(y_valid, dtype=torch.float32, device=device)
+                X_batch = torch.tensor(X_valid, dtype=torch.float32, device=device)
+                y_batch = torch.tensor(y_valid, dtype=torch.float32, device=device)
                 # decoded, output, mu, log_var = predictor(X)
-                for iteration in range(batch_num):
+                for iteration in range(valid_batch_num):
                     X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
                     X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
                     decoded_batch, mu_batch, log_var_batch = vae(X_batch)
                     decoded = torch.cat((decoded, decoded_batch), dim=0)
                     mu = torch.cat((mu, mu_batch), dim=0)
                     log_var = torch.cat((log_var, log_var_batch), dim=0)
-                loss = loss_vae(decoded, X, mu, log_var)
-                mse_loss = F.mse_loss(decoded, X)
+                loss = loss_vae(decoded, X_batch, mu, log_var)
+                mse_loss = F.mse_loss(decoded, X_batch)
             
             print(' VAE test loss: %.4f' % loss.item(), ' VAE test MSE loss: %.4f' % mse_loss.item(), end='')
             if wandb_logger is not None:
@@ -505,11 +517,13 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
     optimizer = optim.Adam(classifier.parameters(), lr=lr)
     loss_classifier = nn.BCELoss()
     
+    classifier_train_losses = np.zeros(train_batch_num*epochs_vae, dtype=np.float32)
+    classifier_valid_losses = np.zeros(valid_batch_num*epochs_vae, dtype=np.float32)
+    
     vae.eval()
     for epoch in range(epochs):
         # train
         classifier.train()
-        batch_num = math.ceil(train_size/batch_size)
         total_loss = 0.0
         total_correct = 0
         # shuffle
@@ -517,31 +531,32 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
         np.random.shuffle(data_train)
         # data_pos, data_neg = data_train[data_train[:,-1]==1], data_train[data_train[:,-1]==0]
         
-        for iteration in range(batch_num):
+        for iteration in range(train_batch_num):
             # batch_pos = data_pos[np.random.choice(data_pos.shape[0], batch_size//2, replace=False)]
             # batch_neg = data_neg[np.random.choice(data_neg.shape[0], batch_size//2, replace=False)]
             # batch = np.concatenate((batch_pos, batch_neg), axis=0)
             # np.random.shuffle(batch)
-            # X, y = batch[:, 0:-1], batch[:, -1]
-            X = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
-            y = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
-            X = scenario_lib.scenario_normalize(X)
-            X = torch.tensor(X, dtype=torch.float32, device=device)
-            y = torch.tensor(y, dtype=torch.float32, device=device)
+            # X_batch, y_batch = batch[:, 0:-1], batch[:, -1]
+            X_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), 0:-1]
+            y_batch = data_train[iteration*batch_size : min((iteration+1)*batch_size,train_size), -1]
+            X_batch = scenario_lib.scenario_normalize(X_batch)
+            X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+            y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
             
-            decoded, mu, log_var = vae(X)
-            out = classifier(mu)
-            loss = loss_classifier(out, y)
+            decoded, mu, log_var = vae(X_batch)
+            out_batch = classifier(mu)
+            loss = loss_classifier(out_batch, y_batch)
+            classifier_train_losses[epoch*train_batch_num+iteration] = loss.item()
             total_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            y_pred = (out > 0.5).data.cpu().numpy().squeeze()
-            y = y.data.cpu().numpy().squeeze()
-            total_correct += sum(y_pred == y)
+            y_pred = (out_batch > 0.5).data.cpu().numpy().squeeze()
+            y_batch = y_batch.data.cpu().numpy().squeeze()
+            total_correct += sum(y_pred == y_batch)
         
-        total_loss /= batch_num
+        total_loss /= train_batch_num
         accuracy = total_correct / train_size
         
         print('Epoch:', epoch+1, ' classifier train loss: %.4f' % total_loss, ' classifier train accuracy: %.4f' % accuracy, end='    ')
@@ -554,22 +569,24 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
         # validate
         with torch.no_grad():
             classifier.eval()
-            batch_num = math.ceil(valid_size/batch_size)
             out = torch.zeros(0, dtype=torch.float32, device=device)
             X_valid = scenario_lib.scenario_normalize(X_valid)
-            X = torch.tensor(X_valid, dtype=torch.float32, device=device)
-            y = torch.tensor(y_valid, dtype=torch.float32, device=device)
-            # out = predictor(X)
-            for iteration in range(batch_num):
+            X_valid = torch.tensor(X_valid, dtype=torch.float32, device=device)
+            y_valid = torch.tensor(y_valid, dtype=torch.float32, device=device)
+            # out = predictor(X_valid)
+            for iteration in range(valid_batch_num):
                 X_batch = X_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
-                X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+                y_batch = y_valid[iteration*batch_size : min((iteration+1)*batch_size,valid_size)]
+                # X_batch = torch.tensor(X_batch, dtype=torch.float32, device=device)
+                # y_batch = torch.tensor(y_batch, dtype=torch.float32, device=device)
                 _, latent, _ = vae(X_batch)
                 out_batch = classifier(latent)
+                classifier_valid_losses[epoch*valid_batch_num+iteration] = loss_classifier(out_batch, y_batch).item()
                 out = torch.cat((out, out_batch), dim=0)
-            bce_loss = loss_classifier(out, y)
+            bce_loss = loss_classifier(out, y_valid)
         
         y_pred = (out > 0.5).data.cpu().numpy().squeeze()
-        accuracy = sum(y_pred == y_valid) / valid_size
+        accuracy = sum(y_pred == y_valid.cpu().numpy()) / valid_size
         
         print(' classifier test loss: %.4f' % bce_loss.item(), ' classifier test accuracy: %.4f' % accuracy)
         if wandb_logger is not None:
@@ -577,6 +594,11 @@ def train_validate_predictor_vae(vae, classifier, scenario_lib,
                 'Classifier test loss': bce_loss.item(), 
                 'Classifier test accuracy': accuracy, 
                 })
+    
+    save_dir = './log/predictor/predictor_vae/'
+    os.makedirs(save_dir, exist_ok=True)
+    np.save(save_dir+'train_losses_seed='+str(seed)+'.npy', classifier_train_losses)
+    np.save(save_dir+'valid_losses_seed='+str(seed)+'.npy', classifier_valid_losses)
 
 
 def train_av_online(av_model, env, scenarios: np.ndarray, 
