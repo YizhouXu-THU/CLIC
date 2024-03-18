@@ -9,7 +9,6 @@ from matplotlib import rcParams
 rcParams['pdf.fonttype'] = 42
 rcParams['ps.fonttype'] = 42
 
-
 alpha_train = 10
 alpha_valid = 50
 

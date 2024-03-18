@@ -36,9 +36,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
 vae = predictor_vae(input_dim=max_dim, device=device)
 classifier = predictor_mlp(input_dim=vae.latent_dim, device=device)
 vae.to(device), classifier.to(device)
-print('predictor_vae')
+# print('predictor_vae')
 get_model_complexity_info(vae, (max_dim,))
-print('classifier')
+# print('classifier')
 get_model_complexity_info(classifier, (vae.latent_dim,))
 train_validate_predictor_vae(vae, classifier, lib, 
                              X_train, y_train, X_test, y_test, 

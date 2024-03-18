@@ -37,7 +37,7 @@ predictor = predictor_mlp(input_dim=max_dim, device=device)
 # predictor = predictor_rnn(timestep=lib.max_timestep, input_dim=max_dim, device=device)
 # predictor = predictor_lstm(timestep=lib.max_timestep, input_dim=max_dim, device=device)
 predictor.to(device)
-print(predictor.__class__.__name__)
+# print(predictor.__class__.__name__)
 get_model_complexity_info(predictor, (max_dim,))
 train_validate_predictor(predictor, 
                          X_train, y_train, X_test, y_test, 

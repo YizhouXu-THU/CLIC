@@ -13,9 +13,11 @@ rcParams['ps.fonttype'] = 42
 
 from utils.scenario_lib import scenario_lib
 from utils.predictor import predictor_mlp
+from utils.function import set_random_seed
 
-np.random.seed(71)
-name = '20230826-0159-fixed_alpha=0.15-seed=71'
+random_seed = 71    # 14, 42, 51, 71, 92
+set_random_seed(random_seed)
+name = '20230826-0159-fixed_alpha=0.15-seed=' + str(random_seed)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 lib = scenario_lib(path='./data/all.npz')
 predictor = predictor_mlp(input_dim=lib.max_dim, device=device)
@@ -87,6 +89,7 @@ ax1.set_xticks([0, 0.5, 1])
 ax1.set_yticks([])
 ax1_1.set_yticks([0, 1, 2, 3, 4])
 ax1.set_xlabel('Label\n(c)')
+ax1_1.set_ylabel('Ratio')
 plt.title('After Training')
 # plt.savefig('./figure/label_distribution_after.pdf', bbox_inches='tight')
 
