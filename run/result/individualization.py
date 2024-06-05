@@ -20,7 +20,7 @@ from utils.function import set_random_seed, evaluate, train_predictor
 
 
 eval_size = 4096
-train_size = 4096
+train_size = 4096   # to keep consistent with eval_size
 sumo_gui = False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 random_seed = 92    # 14, 42, 51, 71, 92
@@ -31,23 +31,26 @@ lib = scenario_lib(path='./data/all.npz')
 env = Env(max_bv_num=lib.max_bv_num, cfg_sumo='./config/lane.sumocfg', gui=sumo_gui, seed=random_seed)
 av_model = RL_brain(env, device=device)
 av_model.policy_net.load_state_dict(torch.load(name, map_location=device))
+av_model.policy_net.eval()
 index = lib.sample(eval_size)
 X_train = lib.data[index]
 
 
-def defect_evaluate(av_model, env, scenarios: np.ndarray) -> np.ndarray:
+def defect_evaluate(av_model, env, scenarios: np.ndarray, defect: bool) -> np.ndarray:
     scenario_num = scenarios.shape[0]
     labels = np.zeros(scenario_num)
     
     with torch.no_grad():
-        # for i in trange(scenario_num):
-        for i in range(scenario_num):
+        for i in trange(scenario_num):
+        # for i in range(scenario_num):
             state = env.reset(scenarios[i])
             done = False
             step = 0
             while not done:
                 step += 1
-                action = av_model.choose_action(process_state(state), deterministic=True)
+                if defect:
+                    state = process_state(state)
+                action = av_model.choose_action(state, deterministic=True)
                 next_state, reward, done, info = env.step(action, timestep=step, need_reward=False)
                 state = next_state
             if info == 'fail':
@@ -78,7 +81,7 @@ def scenario_statistics(scenarios: np.ndarray) -> tuple[float, list[float]]:
                 # BV located on the left front of AV
                 bv_num_interest += 1
                 bv_interest_dis.append(np.sqrt((init_bv_state[j, 2] - scenario[0, 2]) ** 2 + 
-                                      (init_bv_state[j, 3] - scenario[0, 3]) ** 2))
+                                               (init_bv_state[j, 3] - scenario[0, 3]) ** 2))
         bv_num += (j + 1)
     
     bv_interest_proportion = bv_num_interest / bv_num
@@ -87,7 +90,7 @@ def scenario_statistics(scenarios: np.ndarray) -> tuple[float, list[float]]:
 
 predictor_defect = predictor_mlp(input_dim=lib.max_dim, device=device)
 predictor_defect.to(device)
-y_train_defect = defect_evaluate(av_model, env, scenarios=X_train)
+y_train_defect = defect_evaluate(av_model, env, scenarios=X_train, defect=True)
 success_rate_defect = 1 - np.sum(y_train_defect) / eval_size
 print('Success rate with defect:', success_rate_defect)
 train_predictor(predictor_defect, X_train, y_train_defect, device=device)
@@ -97,10 +100,11 @@ train_scenario_defect = lib.data[index]
 bv_interest_proportion_defect, bv_dis_defect, bv_av_pos_x_defect, bv_av_pos_y_defect \
                 = scenario_statistics(train_scenario_defect)
 print('The proportion of BVs of interest:', bv_interest_proportion_defect)
+print('The average distance between AV and BVs of interest:', np.mean(bv_dis_defect))
 
 predictor = predictor_mlp(input_dim=lib.max_dim, device=device)
 predictor.to(device)
-_, y_train = evaluate(av_model, env, scenarios=X_train)
+y_train = defect_evaluate(av_model, env, scenarios=X_train, defect=False)
 success_rate = 1 - np.sum(y_train) / eval_size
 print('Success rate without defect:', success_rate)
 train_predictor(predictor, X_train, y_train, device=device)
@@ -109,6 +113,7 @@ index = lib.select(size=train_size)
 train_scenario = lib.data[index]
 bv_interest_proportion, bv_dis, bv_av_pos_x, bv_av_pos_y = scenario_statistics(train_scenario)
 print('The proportion of BVs of interest:', bv_interest_proportion)
+print('The average distance between AV and BVs of interest:', np.mean(bv_dis))
 
 bin_edges = np.linspace(0, 80, 21)
 bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])

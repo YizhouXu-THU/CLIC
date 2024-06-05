@@ -21,6 +21,7 @@ def set_random_seed(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
 
 
 def focal_loss(out: torch.Tensor, y: torch.Tensor, alpha=0.25, gamma=2.0) -> torch.Tensor:

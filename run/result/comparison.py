@@ -111,4 +111,4 @@ lg = axes[0].legend(bbox_to_anchor=(2.8, -0.05), loc='upper center', ncol=7)
 # txt2 = fig.text(s='Results are from 5 random seeds. ', 
 #                 x=0.12, y=-0.2, ha='left', va='center', fontsize=10, color='black')
 
-plt.savefig('./figure/metrics.pdf', bbox_extra_artists=(lg,), bbox_inches='tight')
+plt.savefig('./figure/comparison.pdf', bbox_extra_artists=(lg,), bbox_inches='tight')
