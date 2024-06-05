@@ -116,7 +116,7 @@ You can resort to [Weights &amp; Biases](https://wandb.ai/site) to login your pe
 export WANDB_API_KEY=YOUR_WANDB_API_KEY
 ```
 
-and set parameter `use_wandb=True` in `./run/main/xxx.py` files to turn on the online syncronization.
+and set parameter `use_wandb=True` in `./run/main/*.py` files to turn on the online syncronization.
 
 ## Citation
 
