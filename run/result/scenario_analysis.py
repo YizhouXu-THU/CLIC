@@ -4,7 +4,7 @@ root_path = os.getcwd()
 sys.path.append(root_path)
 
 from tqdm import trange
-from math import sqrt, pi, atan
+from math import atan2, sqrt, pi, atan2
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,6 +21,7 @@ lib = scenario_lib(path='./data/all.npz')
 highd_path = './data/highD/data/'
 delta_t = 0.04
 
+# scenario library
 bv_bv_dis_lib, bv_av_dis_lib, bv_av_pos_x_lib, bv_av_pos_y_lib, bv_yaw_lib, bv_vel_lib, bv_acc_lib = [], [], [], [], [], [], []
 for i in trange(lib.scenario_num):
     scenario = lib.data[i].reshape((-1, 6))
@@ -41,17 +42,23 @@ for i in trange(lib.scenario_num):
                     bv_bv_dis_lib.append(sqrt((scenario[1 + t * bv_num + j, 2] - scenario[1 + t * bv_num + k, 2]) ** 2 + 
                                               (scenario[1 + t * bv_num + j, 3] - scenario[1 + t * bv_num + k, 3]) ** 2))
 
+# highD dataset
 bv_bv_dis_highd, bv_yaw_highd, bv_vel_highd, bv_acc_highd = [], [], [], []
 for file in os.listdir(highd_path):
     if file.endswith('tracks.csv'):
+        print(file)
         data = np.loadtxt(highd_path+file, delimiter=',', skiprows=1)
         max_timestep = int(np.max(data[:, 0]))
         veh_num = int(np.max(data[:, 1]))
         for i in range(data.shape[0]):
-            bv_yaw_highd.append(atan(data[i, 7] / data[i, 6]) * 180 / pi)
+            if data[i, 6] > 0:
+                yaw = atan2(data[i, 7], data[i, 6]) * 180 / pi
+            elif data[i, 6] < 0:
+                yaw = -atan2(data[i, 7], -data[i, 6]) * 180 / pi
+            bv_yaw_highd.append(yaw)
             bv_vel_highd.append(sqrt(data[i, 6] ** 2 + data[i, 7] ** 2))
             bv_acc_highd.append(sqrt(data[i, 8] ** 2 + data[i, 9] ** 2))
-        for t in range(max_timestep):
+        for t in trange(max_timestep):
             scene = data[data[:, 0] == t+1]
             for i in range(scene.shape[0]):
                 for j in range(i+1, scene.shape[0]):
