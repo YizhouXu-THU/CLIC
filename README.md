@@ -8,7 +8,7 @@ This is the repository of paper ***Continual Driving Policy Optimization with Cl
 
 ## Installation and Setups
 
-Please first ensure that you have installed `SUMO>=1.12.0` following the [SUMO Documentation](https://sumo.dlr.de/docs/Installing/index.html).
+Please first ensure that you have installed `SUMO 1.18.0` following the [SUMO Documentation](https://sumo.dlr.de/docs/Installing/index.html).
 
 Then run the following command to clone this repository:
 
