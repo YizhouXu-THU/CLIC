@@ -20,7 +20,7 @@ cd CLIC
 You can create a virtual environment for this repository (**Optional**):
 
 ```bash
-conda env create -n CLIC python=3.10.13
+conda create -n CLIC python=3.10.13
 conda activate CLIC
 ```
 
